@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game of Life</title>
+
+	<style>
+/* Footer styles */
+div.footer {
+    display: flex;
+    flex-direction: row;
+    position: sticky;
+    width: 100%;
+    bottom: 0;
+    height: 80px;
+    background-color: white;
+    box-shadow: 0 0 8px #7f7f7f;
+    z-index: 9;
+    padding: 20px;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    justify-content: space-between;
+}
+div.footer h1,
+div.footer h2,
+div.footer div,
+div.footer a,
+div.footer p {
+    margin: 0;
+    color: black;
+    text-decoration: none;
+}
+div.footer h1 {
+    font-size: 32px;
+}
+div.footer h1,
+div.footer p {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    text-decoration: none;
+}
+div.footer a {
+    color: #cd1e24;
+}
+div.footer div {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+/* Main styles */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    --theme: #22ed9b;
+}
+
+html, body {
+    margin: 0;
+    background-color: #11151b;
+}
+
+/* Layout styles */
+
+main {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    background-image: url(grid.svg);
+    background-size: 20px;
+    background-position: top left;
+    background-position-x: 0px; /* Script.js */
+    background-position-y: 0px; /* Script.js */
+}
+
+main>div.square {
+    position: absolute;
+    background-color: var(--theme);
+    aspect-ratio: 1;
+}
+main>div.subgrid {
+    position: absolute;
+    background-color: var(--theme);
+    opacity: 0.2;
+}
+	</style>
+</head>
+<body>
+    <main>
+        
+    </main>
+
+    <div class="footer">
+        <div>
+            <h1>Game of Life</h1>
+            <button id="button-next">Next</button>
+        </div>
+        <p>By&nbsp;<a href="https://miles.knightpuzzle.com">Miles</a></p>
+    </div>
+
+    <script>
+let zoom = 40; // Width of cells (px)
+let posX = 5; // One unit is one cell
+let posY = 5;
+let state = [
+    { // Test glider subgrid
+        id: 0,
+        tl: [0, 0], // x, y
+        wh: [5, 5], // w, h
+        sq: [
+            [false, false, false, false, false],
+            [false, false, true , false, false],
+            [false, false, false, true , false],
+            [false, true , true , true , false],
+            [false, false, false, false, false],
+        ],
+    }
+]
+
+function showState() {
+    let main = document.querySelector("main");
+    main.innerHTML = "";
+    for (let subgrid of state) {
+        // Show subgrid for testing
+        let top = (subgrid.tl[1] + posY) * zoom;
+        let left = (subgrid.tl[0] + posX) * zoom;
+        let width = subgrid.wh[0] * zoom;
+        let height = subgrid.wh[1] * zoom;
+        main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px"></div>`
+        let relY = 0;
+        for (let row of subgrid.sq) {
+            let relX = 0;
+            for (let cell of row) {
+                if (cell) {
+                    top = (subgrid.tl[1] + relY + posY) * zoom;
+                    left = (subgrid.tl[0] + relX + posX) * zoom;
+                    main.innerHTML += `<div class="square" style="top:${top}px; left:${left}px; width:${zoom}px;"></div>`
+                }
+                relX++;
+            }
+            relY++;
+        }
+    }
+    main.style.backgroundPositionX = (posX%1 + 0.5)*zoom+"px";
+    main.style.backgroundPositionY = (posY%1 + 0.5)*zoom+"px";
+    main.style.backgroundSize = zoom+"px";
+}
+
+function stateNext() {
+    const NEIGHBOURS = [ // Vectors
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [1, -1],
+        [0, -1],
+        [-1, -1],
+        [-1, 0],
+        [-1, 1],
+    ]
+
+    // Next state for all subgrids
+    for (let subgrid of state) {
+        // Create new generation grid
+        newgrid = structuredClone(subgrid);
+
+        // Flags for reaching subgrid border
+        let b = false, t = false, l = false, r = false;
+
+        // Individual cell changes
+        for (let y=0; y<subgrid.wh[1]; y++) {
+            for (let x=0; x<subgrid.wh[0]; x++) {
+                // Each cell:
+
+                // Count neighbours
+                let count = 0;
+                for (let neighbour of NEIGHBOURS) {
+                    let neighbourX = neighbour[0]+x;
+                    let neighbourY = neighbour[1]+y;
+                    
+                    // Check neighbour is on the subgrid
+                    if (neighbourX >= 0 && 
+                    neighbourX < subgrid.wh[0] &&
+                    neighbourY >= 0 &&
+                    neighbourY < subgrid.wh[1]) {
+                        // Check neighbour is alive
+                        if (subgrid.sq[neighbourY][neighbourX]) {
+                            count++;
+                        }
+                    }
+                }
+
+                // Apply Game of Life rules
+                if (count <= 1) {
+                    // Cell with 0 or 1 neighbours dies
+                    newgrid.sq[y][x] = false;
+                } else if (count == 2) {
+                    // Cell with 2 neighbours stays the same
+                } else if (count == 3) {
+                    // Cell with 3 neighbours is born
+                    newgrid.sq[y][x] = true;
+
+                    // Check if cell on the border of subgrid
+                    if (x == 0) {l = true};
+                    if (y == 0) {t = true};
+                    if (x == newgrid.wh[0]-1) {r = true};
+                    if (y == newgrid.wh[1]-1) {b = true};
+                } else {
+                    // Cell with 4+ neighbours dies
+                    newgrid.sq[y][x] = false;
+                }
+            }
+        }
+
+        // Apply individual cell changes to new generation grid
+        subgrid.sq = newgrid.sq;
+        /*
+        // Reshape new generation grid
+        if (t) {
+            subgrid.sq.unshift()
+        }*/
+    }
+
+    // Merge or split subgrids (repeatedly until resolved - for safety)
+    null;
+
+    // Update on screen
+    showState();
+}
+
+function stateSquareClick(x, y) {
+    /*state.push([x, y]);
+    showState();*/
+}
+
+document.querySelector("main").addEventListener("click", function(e) {
+    // Calculate cell coordinates clicked
+    let gridX = parseInt(e.clientX/zoom - posX);
+    let gridY = parseInt(e.clientY/zoom - posY);
+    stateSquareClick(gridX, gridY);
+});
+
+document.getElementById("button-next").addEventListener("click", stateNext);
+
+showState();
+    </script>
+</body>
+</html>
