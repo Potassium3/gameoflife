@@ -110,14 +110,25 @@ let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [
     { // Test glider subgrid
-        id: 0,
+        tl: [20, 0], // x, y
+        wh: [7, 6], // w, h
+        sq: [
+            [false, false, false, false, false, false, false],
+            [false, false, true , false, false, true , false],
+            [false, true , false, false, false, false, false],
+            [false, true , false, false, false, true , false],
+            [false, true , true , true , true , false, false],
+            [false, false, false, false, false, false, false],
+        ],
+    },
+    { // Test glider subgrid
         tl: [0, 0], // x, y
         wh: [5, 5], // w, h
         sq: [
             [false, false, false, false, false],
-            [false, false, true , false, false],
+            [false, true , false, false, false],
+            [false, false, false, false, false],
             [false, false, false, true , false],
-            [false, true , true , true , false],
             [false, false, false, false, false],
         ],
     }
@@ -169,8 +180,11 @@ function stateNext() {
         // Create new generation grid
         newgrid = structuredClone(subgrid);
 
-        // Flags for reaching subgrid border
+        // Flags for reaching subgrid border (expand subgrid)
         let b = false, t = false, l = false, r = false;
+
+        // Flags for leaving subgrid border (crop subgrid)
+        let bc = true, tc = true, lc = true, rc = true;
 
         // Individual cell changes
         for (let y=0; y<subgrid.wh[1]; y++) {
@@ -201,15 +215,29 @@ function stateNext() {
                     newgrid.sq[y][x] = false;
                 } else if (count == 2) {
                     // Cell with 2 neighbours stays the same
+
+                    // Check if alive cell next to border of subgrid (stops cropping)
+                    if (newgrid.sq[y][x]) {
+                        if (x == 1) {lc = false}
+                        else if (x == newgrid.wh[0]-2) {rc = false}
+                        if (y == 1) {tc = false}
+                        else if (y == newgrid.wh[1]-2) {bc = false}
+                    }
                 } else if (count == 3) {
                     // Cell with 3 neighbours is born
                     newgrid.sq[y][x] = true;
 
-                    // Check if cell on the border of subgrid
-                    if (x == 0) {l = true};
-                    if (y == 0) {t = true};
-                    if (x == newgrid.wh[0]-1) {r = true};
-                    if (y == newgrid.wh[1]-1) {b = true};
+                    // Check if alive cell on the border of subgrid
+                    if (x == 0) {l = true}
+                    else if (x == newgrid.wh[0]-1) {r = true}
+                    if (y == 0) {t = true}
+                    else if (y == newgrid.wh[1]-1) {b = true}
+
+                    // Check if alive cell next to border of subgrid (stops cropping)
+                    if (x == 1) {lc = false}
+                    else if (x == newgrid.wh[0]-2) {rc = false}
+                    if (y == 1) {tc = false}
+                    else if (y == newgrid.wh[1]-2) {bc = false}
                 } else {
                     // Cell with 4+ neighbours dies
                     newgrid.sq[y][x] = false;
@@ -219,27 +247,130 @@ function stateNext() {
 
         // Apply individual cell changes to new generation grid
         subgrid.sq = newgrid.sq;
-        /*
-        // Reshape new generation grid
+        
+        // Expand new generation grid
         if (t) {
-            let newrow = [];
-            for (let i=0; i<subgrid.wh[0]; i++) {
-            
+            let newrow = Array(subgrid.wh[0]).fill(false);
+            subgrid.sq.unshift(newrow);
+            subgrid.wh[1]++;
+            subgrid.tl[1]--;
+        }
+        if (l) {
+            for (let row of subgrid.sq) {
+                row.unshift(false);
             }
-            subgrid.sq.unshift()
-        }*/
+            subgrid.wh[0]++;
+            subgrid.tl[0]--;
+        }
+        if (b) {
+            let newrow = Array(subgrid.wh[0]).fill(false);
+            subgrid.sq.push(newrow);
+            subgrid.wh[1]++;
+        }
+        if (r) {
+            for (let row of subgrid.sq) {
+                row.push(false);
+            }
+            subgrid.wh[0]++;
+        }
+
+        // Crop new generation grid
+        if (tc) {
+            subgrid.sq.shift();
+            subgrid.wh[1]--;
+            subgrid.tl[1]++;
+        }
+        if (lc) {
+            for (let row of subgrid.sq) {
+                row.shift();
+            }
+            subgrid.wh[0]--;
+            subgrid.tl[0]++;
+        }
+        if (bc) {
+            subgrid.sq.pop();
+            subgrid.wh[1]--;
+        }
+        if (rc) {
+            for (let row of subgrid.sq) {
+                row.pop();
+            }
+            subgrid.wh[0]--;
+        }
     }
 
-    // Merge or split subgrids (repeatedly until resolved - for safety)
-    null;
+    // Merge, split or delete subgrids
+    stateManageSubgrids();
 
-    // Update on screen
+    // Update
     showState();
 }
 
+function stateManageSubgrids() {
+    // Merges, splits or deletes subgrids to make everything easier to compute
+    // Must continue doing this unless subgrids overlap
+    // This is one of the most complex parts of this program
+
+    // 1. MERGE (critical)
+    let merging = true; // Flag for another check needed
+    while (merging) {
+        // Check for merges (overlapping subgrids)
+        let positions = []
+        for (let subgrid of state) {
+            for (let position of positions) {
+                // Check y overlap
+                if (subgrid.tl[1] < position[0][1]+position[1][1] &&
+                subgrid.tl[1]+subgrid.wh[1] > position[0][1]) {
+                    merging = true;
+                }
+
+                // Check x overlap
+                if (subgrid.tl[0] < position[0][0]+position[1][0] &&
+                subgrid.tl[0]+subgrid.wh[0] > position[0][0]) {
+                    merging = true;
+                }
+            }
+
+            positions.push([subgrid.tl, subgrid.wh])
+        }
+        merging = false;
+    }
+
+    // 2. DELETE (necessary)
+    let i=0;
+    let deletions = []
+    for (let subgrid of state) {
+        if (subgrid.wh[0] <= 2 || subgrid.wh[1] <= 2) {
+            deletions.push(i);
+        }
+        i++;
+    }
+    for (let i=deletions.length-1;i>=0;i--) {
+        // Loop from the back of the list to avoid offsetting other subgrids
+        state.splice(deletions[i], 1);
+    }
+
+    // 3. SPLIT (optional, efficient)
+}
+
 function stateSquareClick(x, y) {
-    /*state.push([x, y]);
-    showState();*/
+    // Simply create a new subgrid with one square in, and then merge
+    // Not efficient but easier to code
+    state.push({
+        wh: [3, 3],
+        tl: [x-1, y-1],
+        sq: [
+            [false, false, false],
+            [false, true, false],
+            [false, false, false],
+        ],
+    });
+
+    // Merge, split or delete subgrids
+    stateManageSubgrids();
+
+    // Update
+    showState();
 }
 
 document.querySelector("main").addEventListener("click", function(e) {
