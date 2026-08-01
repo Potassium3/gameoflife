@@ -110,7 +110,7 @@ let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [
     { // Test glider subgrid
-        tl: [10, 0], // x, y
+        tl: [50, 40], // x, y
         wh: [7, 6], // w, h
         sq: [
             [false, false, false, false, false, false, false],
@@ -122,7 +122,7 @@ let state = [
         ],
     },
     { // Test glider subgrid
-        tl: [0, -5], // x, y
+        tl: [40, 35], // x, y
         wh: [5, 5], // w, h
         sq: [
             [false, false, false, false, false],
@@ -133,7 +133,7 @@ let state = [
         ],
     },
     { // Random block
-        tl: [-2, 3], // x, y
+        tl: [38, 43], // x, y
         wh: [5, 5], // w, h
         sq: [
             [false, false, false, false, false],
@@ -188,6 +188,12 @@ function stateNext() {
 
     // Next state for all subgrids
     for (let subgrid of state) {
+        // Subgrid metadata for empty rows/columns
+        subgrid.blank = [
+            Array(subgrid.wh[0]).fill(false),
+            Array(subgrid.wh[1]).fill(false)
+        ]
+
         // Create new generation grid
         newgrid = structuredClone(subgrid);
 
@@ -199,12 +205,6 @@ function stateNext() {
 
         // Flag for active or stable state
         null;
-
-        // Subgrid metadata for empty rows/columns
-        subgrid.blank = [
-            Array(subgrid.wh[0]).fill(false),
-            Array(subgrid.wh[1]).fill(false)
-        ]
 
         // Individual cell changes
         for (let y=0; y<subgrid.wh[1]; y++) {
@@ -244,6 +244,7 @@ function stateNext() {
                         else if (y == newgrid.wh[1]-2) {bc = false}
 
                         // Alive cell means row/column not blank:
+                        console.log(newgrid.blank)
                         newgrid.blank[0][x] = true;
                         newgrid.blank[1][y] = true;
                     }
@@ -264,6 +265,7 @@ function stateNext() {
                     else if (y == newgrid.wh[1]-2) {bc = false}
 
                     // Alive cell means row/column not blank:
+                    console.log(newgrid.blank) // ERROR Find blanks relative to CROPPED and EXPANDED grid AFTERWARDS (maybe include in cropping/expanding algorithm)
                     newgrid.blank[0][x] = true;
                     newgrid.blank[1][y] = true;
                 } else {
@@ -450,7 +452,10 @@ function stateManageSubgrids() {
     // 3. SPLIT (optional, efficient, see stateNext for how metadata is created)
     // Vertical split line
     let countGap = 0;
-    for (let subgrid of subgrids) {
+    for (let subgrid of state) {
+        // If no blank rows/cols metadata, don't bother
+        if (subgrid.blank) {null} else {continue};
+
         for (let column of subgrid.blank[0]) {
             // Count number of blank columns in a row
             if (!column) { // If blank
@@ -461,10 +466,12 @@ function stateManageSubgrids() {
 
             // If 2 or more then split
             if (countGap == 2) {
-                
+                null;
             }
         }
     }
+
+    // Horizontal split line
 
     // 4. EXPAND (see stateNext)
 
@@ -475,7 +482,7 @@ function stateSquareClick(x, y) {
     let onSubgrid = false;
     // If on a subgrid already
     for (let subgrid of state) {
-        if (x >= subgrid.tl[0] && y >= subgrid.tl[1] && x < subgrid.tl[0]+subgrid.wh[0] && y < subgrid.tl[1]+subgrid.wh[1]) {
+        if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
             // Toggle square
             subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]] = !subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]];
             onSubgrid = true;
