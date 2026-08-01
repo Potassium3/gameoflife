@@ -105,7 +105,7 @@ main>div.subgrid {
     </div>
 
     <script>
-let zoom = 40; // Width of cells (px)
+let zoom = 10; // Width of cells (px)
 let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [
@@ -197,6 +197,15 @@ function stateNext() {
         // Flags for leaving subgrid border (crop subgrid)
         let bc = true, tc = true, lc = true, rc = true;
 
+        // Flag for active or stable state
+        null;
+
+        // Subgrid metadata for empty rows/columns
+        subgrid.blank = [
+            Array(subgrid.wh[0]).fill(false),
+            Array(subgrid.wh[1]).fill(false)
+        ]
+
         // Individual cell changes
         for (let y=0; y<subgrid.wh[1]; y++) {
             for (let x=0; x<subgrid.wh[0]; x++) {
@@ -226,13 +235,17 @@ function stateNext() {
                     newgrid.sq[y][x] = false;
                 } else if (count == 2) {
                     // Cell with 2 neighbours stays the same
-
-                    // Check if alive cell next to border of subgrid (stops cropping)
+                    
                     if (newgrid.sq[y][x]) {
+                        // Check if alive cell next to border of subgrid (stops cropping)
                         if (x == 1) {lc = false}
                         else if (x == newgrid.wh[0]-2) {rc = false}
                         if (y == 1) {tc = false}
                         else if (y == newgrid.wh[1]-2) {bc = false}
+
+                        // Alive cell means row/column not blank:
+                        newgrid.blank[0][x] = true;
+                        newgrid.blank[1][y] = true;
                     }
                 } else if (count == 3) {
                     // Cell with 3 neighbours is born
@@ -249,6 +262,10 @@ function stateNext() {
                     else if (x == newgrid.wh[0]-2) {rc = false}
                     if (y == 1) {tc = false}
                     else if (y == newgrid.wh[1]-2) {bc = false}
+
+                    // Alive cell means row/column not blank:
+                    newgrid.blank[0][x] = true;
+                    newgrid.blank[1][y] = true;
                 } else {
                     // Cell with 4+ neighbours dies
                     newgrid.sq[y][x] = false;
@@ -430,21 +447,54 @@ function stateManageSubgrids() {
         state.splice(deletions[i], 1);
     }
 
-    // 3. SPLIT (optional, efficient)
+    // 3. SPLIT (optional, efficient, see stateNext for how metadata is created)
+    // Vertical split line
+    let countGap = 0;
+    for (let subgrid of subgrids) {
+        for (let column of subgrid.blank[0]) {
+            // Count number of blank columns in a row
+            if (!column) { // If blank
+                countGap++;
+            } else {
+                countGap = 0;
+            }
+
+            // If 2 or more then split
+            if (countGap == 2) {
+                
+            }
+        }
+    }
+
+    // 4. EXPAND (see stateNext)
+
+    // 5. CROP (see stateNext)
 }
 
 function stateSquareClick(x, y) {
-    // Simply create a new subgrid with one square in, and then merge
-    // Not efficient but easier to code
-    state.push({
-        wh: [3, 3],
-        tl: [x-1, y-1],
-        sq: [
-            [false, false, false],
-            [false, true, false],
-            [false, false, false],
-        ],
-    });
+    let onSubgrid = false;
+    // If on a subgrid already
+    for (let subgrid of state) {
+        if (x >= subgrid.tl[0] && y >= subgrid.tl[1] && x < subgrid.tl[0]+subgrid.wh[0] && y < subgrid.tl[1]+subgrid.wh[1]) {
+            // Toggle square
+            subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]] = !subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]];
+            onSubgrid = true;
+            break;
+        }
+    }
+
+    // If not on subgrid, create new
+    if (!onSubgrid) {
+        state.push({
+            wh: [3, 3],
+            tl: [x-1, y-1],
+            sq: [
+                [false, false, false],
+                [false, true, false],
+                [false, false, false],
+            ],
+        });
+    }
 
     // Merge, split or delete subgrids
     stateManageSubgrids();
