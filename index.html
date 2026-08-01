@@ -110,7 +110,7 @@ let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [
     { // Test glider subgrid
-        tl: [20, 0], // x, y
+        tl: [10, 0], // x, y
         wh: [7, 6], // w, h
         sq: [
             [false, false, false, false, false, false, false],
@@ -122,13 +122,24 @@ let state = [
         ],
     },
     { // Test glider subgrid
-        tl: [0, 0], // x, y
+        tl: [0, -5], // x, y
         wh: [5, 5], // w, h
         sq: [
             [false, false, false, false, false],
-            [false, true , false, false, false],
-            [false, false, false, false, false],
             [false, false, false, true , false],
+            [false, true , false, true , false],
+            [false, false, true , true , false],
+            [false, false, false, false, false],
+        ],
+    },
+    { // Random block
+        tl: [-2, 3], // x, y
+        wh: [5, 5], // w, h
+        sq: [
+            [false, false, false, false, false],
+            [false, true, true, false, false],
+            [false, true, true, false, false],
+            [false, false, false, false, false],
             [false, false, false, false, false],
         ],
     }
@@ -314,24 +325,93 @@ function stateManageSubgrids() {
     // 1. MERGE (critical)
     let merging = true; // Flag for another check needed
     while (merging) {
-        // Check for merges (overlapping subgrids)
-        let positions = []
+        // Check for overlapping subgrids
+        merging = false;
+        let positions = [];
+        let i=0;
         for (let subgrid of state) {
+            let j=0;
             for (let position of positions) {
-                // Check y overlap
-                if (subgrid.tl[1] < position[0][1]+position[1][1] &&
-                subgrid.tl[1]+subgrid.wh[1] > position[0][1]) {
+                // Check y overlap AND x overlap
+                if (
+                    (subgrid.tl[1] < position[0][1]+position[1][1] &&
+                        subgrid.tl[1]+subgrid.wh[1] > position[0][1]) &&
+                    (subgrid.tl[0] < position[0][0]+position[1][0] &&
+                        subgrid.tl[0]+subgrid.wh[0] > position[0][0])
+                ) {
+                    // Execute merging
                     merging = true;
-                }
 
-                // Check x overlap
-                if (subgrid.tl[0] < position[0][0]+position[1][0] &&
-                subgrid.tl[0]+subgrid.wh[0] > position[0][0]) {
-                    merging = true;
+                    // i = Index of first subgrid
+                    let subgrid1 = subgrid; // First subgrid
+
+                    // j = Index of second subgrid, less than index of first
+                    let subgrid2 = state[j]; // Second subgrid
+                    
+                    // Define dimensions of new subgrid
+                    let newSubgrid = {
+                        tl: [
+                            // The topmost and leftmost point
+                            Math.min(subgrid1.tl[0], subgrid2.tl[0]), 
+                            Math.min(subgrid1.tl[1], subgrid2.tl[1])
+                        ],
+                        wh: [
+                            // Maximum bottom right point minus the above to get dimensions
+                            Math.max(subgrid1.tl[0]+subgrid1.wh[0], subgrid2.tl[0]+subgrid2.wh[0])
+                            - Math.min(subgrid1.tl[0], subgrid2.tl[0]),
+                            Math.max(subgrid1.tl[1]+subgrid1.wh[1], subgrid2.tl[1]+subgrid2.wh[1])
+                            - Math.min(subgrid1.tl[1], subgrid2.tl[1]),
+                        ],
+                        sq: [],
+                    }
+                    
+                    // Fill new subgrid with the correct squares
+                    newSubgrid.sq = Array(newSubgrid.wh[1]);
+                    for (let y=0; y<newSubgrid.wh[1]; y++) {
+                        newSubgrid.sq[y] = Array(newSubgrid.wh[0]);
+                        for (let x=0; x<newSubgrid.wh[0]; x++) {
+                            // Find the current position relative to both initial subgrids 
+                            let xAbsolute = x+newSubgrid.tl[0];
+                            let yAbsolute = y+newSubgrid.tl[1];
+                            let xRelativeTo1 = xAbsolute - subgrid1.tl[0];
+                            let yRelativeTo1 = yAbsolute - subgrid1.tl[1];
+                            let xRelativeTo2 = xAbsolute - subgrid2.tl[0];
+                            let yRelativeTo2 = yAbsolute - subgrid2.tl[1];
+
+                            console.log(xRelativeTo1, yRelativeTo1);
+
+                            // If alive squares in that position in either of the subgrids
+                            newSubgrid.sq[y][x] = // Boolean assignment
+                            (
+                                yRelativeTo1 >= 0 && // Check position is ON the smaller subgrids
+                                yRelativeTo1 < subgrid1.wh[1] - 1 &&
+                                xRelativeTo1 >= 0 &&
+                                xRelativeTo1 < subgrid1.wh[0] - 1 &&
+                                subgrid1.sq[yRelativeTo1][xRelativeTo1]
+                            ) || (
+                                yRelativeTo2 >= 0 && // Check position is ON the smaller subgrids
+                                yRelativeTo2 < subgrid2.wh[1] - 1 &&
+                                xRelativeTo2 >= 0 &&
+                                xRelativeTo2 < subgrid2.wh[0] - 1 &&
+                                subgrid2.sq[yRelativeTo2][xRelativeTo2]
+                            )
+                        }
+                    }
+
+                    // Delete initial subgrids and add the new one to "state"
+                    state.splice(i, 1);
+                    state.splice(j, 1);
+                    state.push(newSubgrid);
+
+                    // Check
+                    console.log(newSubgrid);
                 }
+                j++;
             }
 
+            // Add current subgrid to list of subgrid positions
             positions.push([subgrid.tl, subgrid.wh])
+            i++;
         }
         merging = false;
     }
