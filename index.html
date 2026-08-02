@@ -244,7 +244,6 @@ function stateNext() {
                         else if (y == newgrid.wh[1]-2) {bc = false}
 
                         // Alive cell means row/column not blank:
-                        console.log(newgrid.blank)
                         newgrid.blank[0][x] = true;
                         newgrid.blank[1][y] = true;
                     }
@@ -259,13 +258,12 @@ function stateNext() {
                     else if (y == newgrid.wh[1]-1) {b = true}
 
                     // Check if alive cell next to border of subgrid (stops cropping)
-                    if (x == 1) {lc = false}
-                    else if (x == newgrid.wh[0]-2) {rc = false}
-                    if (y == 1) {tc = false}
-                    else if (y == newgrid.wh[1]-2) {bc = false}
+                    if (x <= 1) {lc = false}
+                    else if (x >= newgrid.wh[0]-2) {rc = false}
+                    if (y <= 1) {tc = false}
+                    else if (y >= newgrid.wh[1]-2) {bc = false}
 
                     // Alive cell means row/column not blank:
-                    console.log(newgrid.blank) // ERROR Find blanks relative to CROPPED and EXPANDED grid AFTERWARDS (maybe include in cropping/expanding algorithm)
                     newgrid.blank[0][x] = true;
                     newgrid.blank[1][y] = true;
                 } else {
@@ -277,11 +275,13 @@ function stateNext() {
 
         // Apply individual cell changes to new generation grid
         subgrid.sq = newgrid.sq;
+        subgrid.blank = newgrid.blank;
         
         // Expand new generation grid
         if (t) {
             let newrow = Array(subgrid.wh[0]).fill(false);
             subgrid.sq.unshift(newrow);
+            subgrid.blank[1].unshift(false);
             subgrid.wh[1]++;
             subgrid.tl[1]--;
         }
@@ -289,24 +289,28 @@ function stateNext() {
             for (let row of subgrid.sq) {
                 row.unshift(false);
             }
+            subgrid.blank[0].unshift(false);
             subgrid.wh[0]++;
             subgrid.tl[0]--;
         }
         if (b) {
             let newrow = Array(subgrid.wh[0]).fill(false);
             subgrid.sq.push(newrow);
+            subgrid.blank[1].push(false);
             subgrid.wh[1]++;
         }
         if (r) {
             for (let row of subgrid.sq) {
                 row.push(false);
             }
+            subgrid.blank[0].push(false);
             subgrid.wh[0]++;
         }
 
         // Crop new generation grid
         if (tc) {
             subgrid.sq.shift();
+            subgrid.blank[1].shift();
             subgrid.wh[1]--;
             subgrid.tl[1]++;
         }
@@ -314,17 +318,20 @@ function stateNext() {
             for (let row of subgrid.sq) {
                 row.shift();
             }
+            subgrid.blank[0].shift();
             subgrid.wh[0]--;
             subgrid.tl[0]++;
         }
         if (bc) {
             subgrid.sq.pop();
+            subgrid.blank[1].pop();
             subgrid.wh[1]--;
         }
         if (rc) {
             for (let row of subgrid.sq) {
                 row.pop();
             }
+            subgrid.blank[0].pop();
             subgrid.wh[0]--;
         }
     }
@@ -397,8 +404,6 @@ function stateManageSubgrids() {
                             let xRelativeTo2 = xAbsolute - subgrid2.tl[0];
                             let yRelativeTo2 = yAbsolute - subgrid2.tl[1];
 
-                            console.log(xRelativeTo1, yRelativeTo1);
-
                             // If alive squares in that position in either of the subgrids
                             newSubgrid.sq[y][x] = // Boolean assignment
                             (
@@ -451,11 +456,11 @@ function stateManageSubgrids() {
 
     // 3. SPLIT (optional, efficient, see stateNext for how metadata is created)
     // Vertical split line
-    let countGap = 0;
     for (let subgrid of state) {
         // If no blank rows/cols metadata, don't bother
         if (subgrid.blank) {null} else {continue};
-
+        
+        let countGap = 0;
         for (let column of subgrid.blank[0]) {
             // Count number of blank columns in a row
             if (!column) { // If blank
@@ -465,8 +470,8 @@ function stateManageSubgrids() {
             }
 
             // If 2 or more then split
-            if (countGap == 2) {
-                null;
+            if (countGap >= 2) {
+                console.log("SPLIT!")
             }
         }
     }
