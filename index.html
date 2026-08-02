@@ -461,6 +461,7 @@ function stateManageSubgrids() {
         if (subgrid.blank) {null} else {continue};
         
         let countGap = 0;
+        let columnNum = 0;
         for (let column of subgrid.blank[0]) {
             // Count number of blank columns in a row
             if (!column) { // If blank
@@ -472,7 +473,10 @@ function stateManageSubgrids() {
             // If 2 or more then split
             if (countGap >= 2) {
                 console.log("SPLIT!")
+                let splitIndex = columnNum - countGap + 1;
+                console.log(splitIndex, countGap);
             }
+            columnNum++;
         }
     }
 
