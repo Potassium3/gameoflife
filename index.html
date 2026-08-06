@@ -86,8 +86,8 @@ main>div.square {
 }
 main>div.subgrid {
     position: absolute;
-    background-color: var(--theme);
-    opacity: 0.2;
+    border: 2px solid white;
+    border-radius: 4px;
 }
 	</style>
 </head>
@@ -174,86 +174,12 @@ function showState() {
     main.style.backgroundSize = zoom+"px";
 }
 
-function stateNext() {
-    const NEIGHBOURS = [ // Vectors
-        [0, 1],
-        [1, 1],
-        [1, 0],
-        [1, -1],
-        [0, -1],
-        [-1, -1],
-        [-1, 0],
-        [-1, 1],
-    ]
-
-    // Next state for all subgrids
+function stateReshape() {
     for (let subgrid of state) {
-        // Subgrid metadata for empty rows/columns
-        subgrid.blank = [
-            Array(subgrid.wh[0]).fill(false),
-            Array(subgrid.wh[1]).fill(false)
-        ]
+        // Check that subgrid metadata exists
+        if (subgrid.blank) {null /* Yes */} else {continue /* Skip */};
 
-        // Create new generation grid
-        newgrid = structuredClone(subgrid);
-
-        // Flag for active or stable state
-        null;
-
-        // Individual cell changes
-        for (let y=0; y<subgrid.wh[1]; y++) {
-            for (let x=0; x<subgrid.wh[0]; x++) {
-                // Each cell:
-
-                // Count neighbours
-                let count = 0;
-                for (let neighbour of NEIGHBOURS) {
-                    let neighbourX = neighbour[0]+x;
-                    let neighbourY = neighbour[1]+y;
-                    
-                    // Check neighbour is on the subgrid
-                    if (neighbourX >= 0 && 
-                    neighbourX < subgrid.wh[0] &&
-                    neighbourY >= 0 &&
-                    neighbourY < subgrid.wh[1]) {
-                        // Check neighbour is alive
-                        if (subgrid.sq[neighbourY][neighbourX]) {
-                            count++;
-                        }
-                    }
-                }
-
-                // Apply Game of Life rules
-                if (count <= 1) {
-                    // Cell with 0 or 1 neighbours dies
-                    newgrid.sq[y][x] = false;
-                } else if (count == 2) {
-                    // Cell with 2 neighbours stays the same
-                    
-                    if (newgrid.sq[y][x]) {
-                        // If alive, cell means row/column not blank:
-                        newgrid.blank[0][x] = true;
-                        newgrid.blank[1][y] = true;
-                    }
-                } else if (count == 3) {
-                    // Cell with 3 neighbours is born
-                    newgrid.sq[y][x] = true;
-
-                    // Alive cell means row/column not blank:
-                    newgrid.blank[0][x] = true;
-                    newgrid.blank[1][y] = true;
-                } else {
-                    // Cell with 4+ neighbours dies
-                    newgrid.sq[y][x] = false;
-                }
-            }
-        }
-
-        // Apply individual cell changes to new generation grid
-        subgrid.sq = newgrid.sq;
-        subgrid.blank = newgrid.blank;
-        
-        // Expand new generation grid
+        // Expand grid
         if (subgrid.blank[1][0]) {
             let newrow = Array(subgrid.wh[0]).fill(false);
             subgrid.sq.unshift(newrow);
@@ -283,15 +209,18 @@ function stateNext() {
             subgrid.wh[0]++;
         }
 
-        // Crop new generation grid
-        /*
-        if (tc) {
+        // Crop grid
+        while (!subgrid.blank[1][1] && subgrid.wh[1] > 2) {
+            // While second row blank
+            // Delete top row
             subgrid.sq.shift();
             subgrid.blank[1].shift();
             subgrid.wh[1]--;
             subgrid.tl[1]++;
         }
-        if (lc) {
+        while (!subgrid.blank[0][1] && subgrid.wh[0] > 2) {
+            // While second column blank
+            // Delete leftmost column
             for (let row of subgrid.sq) {
                 row.shift();
             }
@@ -299,33 +228,29 @@ function stateNext() {
             subgrid.wh[0]--;
             subgrid.tl[0]++;
         }
-        if (bc) {
+        while (!subgrid.blank[1][subgrid.wh[1]-2] && subgrid.wh[1] > 2) {
+            // While penultimate row blank
+            // Delete bottom row
             subgrid.sq.pop();
             subgrid.blank[1].pop();
             subgrid.wh[1]--;
         }
-        if (rc) {
+        while (!subgrid.blank[0][subgrid.wh[0]-2] && subgrid.wh[0] > 2) {
+            // Deleting rightmost column
             for (let row of subgrid.sq) {
                 row.pop();
             }
             subgrid.blank[0].pop();
             subgrid.wh[0]--;
-        }*/
+        }
     }
-
-    // Merge, split or delete subgrids
-    stateManageSubgrids();
-
-    // Update
-    showState();
 }
 
-function stateManageSubgrids() {
-    // Merges, splits or deletes subgrids to make everything easier to compute
+function stateMerge() {
+    // Merges subgrids to make everything easier to compute
     // Must continue doing this unless subgrids overlap
     // This is one of the most complex parts of this program
 
-    // 1. MERGE (critical)
     let merging = true; // Flag for another check needed
     while (merging) {
         // Check for overlapping subgrids
@@ -403,9 +328,6 @@ function stateManageSubgrids() {
                     state.splice(i, 1);
                     state.splice(j, 1);
                     state.push(newSubgrid);
-
-                    // Check
-                    console.log(newSubgrid);
                 }
                 j++;
             }
@@ -415,8 +337,9 @@ function stateManageSubgrids() {
             i++;
         }
     }
+}
 
-    // 2. DELETE (necessary)
+function stateDeleteTrivial() {
     let i=0;
     let deletions = []
     for (let subgrid of state) {
@@ -429,8 +352,9 @@ function stateManageSubgrids() {
         // Loop from the back of the list to avoid offsetting other subgrids
         state.splice(deletions[i], 1);
     }
+}
 
-    // 3. SPLIT (optional, efficient, see stateNext for how metadata is created)
+function stateSplit() {
     let splitting = true; // Flag for another split needed
     while (splitting) {
         splitting = false;
@@ -612,14 +536,111 @@ function stateManageSubgrids() {
 
             i++;
         }
+        // Check for splits again until no are required
+    }
+}
 
-        // DEFAULT, PLEASE REMOVE AFTER TESTING
-        splitting = false;
+// HIGHER LEVEL FUNCTIONS BELOW
+// (button and click functions; Life rules)
+
+function stateNext() {
+    const NEIGHBOURS = [ // Vectors
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [1, -1],
+        [0, -1],
+        [-1, -1],
+        [-1, 0],
+        [-1, 1],
+    ]
+
+    // Next state for all subgrids
+    for (let subgrid of state) {
+        // Subgrid metadata for empty rows/columns
+        subgrid.blank = [
+            Array(subgrid.wh[0]).fill(false),
+            Array(subgrid.wh[1]).fill(false)
+        ]
+
+        // Create new generation grid
+        newgrid = structuredClone(subgrid);
+
+        // Flag for active or stable state
+        null; // IN PROGRESS
+
+        // Individual cell changes
+        for (let y=0; y<subgrid.wh[1]; y++) {
+            for (let x=0; x<subgrid.wh[0]; x++) {
+                // Each cell:
+
+                // Count neighbours
+                let count = 0;
+                for (let neighbour of NEIGHBOURS) {
+                    let neighbourX = neighbour[0]+x;
+                    let neighbourY = neighbour[1]+y;
+                    
+                    // Check neighbour is on the subgrid
+                    if (neighbourX >= 0 && 
+                    neighbourX < subgrid.wh[0] &&
+                    neighbourY >= 0 &&
+                    neighbourY < subgrid.wh[1]) {
+                        // Check neighbour is alive
+                        if (subgrid.sq[neighbourY][neighbourX]) {
+                            count++;
+                        }
+                    }
+                }
+
+                // Apply Game of Life rules
+                if (count <= 1) {
+                    // Cell with 0 or 1 neighbours dies
+                    newgrid.sq[y][x] = false;
+                } else if (count == 2) {
+                    // Cell with 2 neighbours stays the same
+                    
+                    if (newgrid.sq[y][x]) {
+                        // If alive, cell means row/column not blank:
+                        newgrid.blank[0][x] = true;
+                        newgrid.blank[1][y] = true;
+                    }
+                } else if (count == 3) {
+                    // Cell with 3 neighbours is born
+                    newgrid.sq[y][x] = true;
+
+                    // Alive cell means row/column not blank:
+                    newgrid.blank[0][x] = true;
+                    newgrid.blank[1][y] = true;
+                } else {
+                    // Cell with 4+ neighbours dies
+                    newgrid.sq[y][x] = false;
+                }
+            }
+        }
+
+        // Apply individual cell changes to new generation grid
+        subgrid.sq = newgrid.sq;
+        subgrid.blank = newgrid.blank;
+        
+        // Used to have reshape code inside loop
+        // Sadly, not any more
     }
 
-    // 4. EXPAND (see stateNext)
+    // Tidy up
+    stateMerge(); // IMPORTANT
+    stateSplit();
+    stateReshape();
+    stateDeleteTrivial();
 
-    // 5. CROP (see stateNext)
+    // Update
+    showState();
+}
+
+function stateManageSubgrids() {
+    stateMerge();
+    stateSplit();
+    stateReshape();
+    stateDeleteTrivial();
 }
 
 function stateSquareClick(x, y) {
@@ -647,8 +668,10 @@ function stateSquareClick(x, y) {
         });
     }
 
-    // Merge, split or delete subgrids
-    stateManageSubgrids();
+    // Tidy up
+    stateMerge();
+    stateReshape();
+    stateDeleteTrivial();
 
     // Update
     showState();
@@ -656,8 +679,8 @@ function stateSquareClick(x, y) {
 
 document.querySelector("main").addEventListener("click", function(e) {
     // Calculate cell coordinates clicked
-    let gridX = parseInt(e.clientX/zoom - posX);
-    let gridY = parseInt(e.clientY/zoom - posY);
+    let gridX = Math.floor(e.clientX/zoom - posX);
+    let gridY = Math.floor(e.clientY/zoom - posY);
     stateSquareClick(gridX, gridY);
 });
 
