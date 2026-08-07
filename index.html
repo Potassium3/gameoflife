@@ -7,6 +7,7 @@
 
 	<style>
 /* Footer styles */
+
 div.footer {
     display: flex;
     flex-direction: row;
@@ -58,6 +59,7 @@ div.footer div {
 
 html {
     --theme: #22ed9b;
+    --theme-2: #31ba84;
 }
 
 html, body {
@@ -65,7 +67,7 @@ html, body {
     background-color: #11151b;
 }
 
-/* Layout styles */
+/* Grid styles */
 
 main {
     position: relative;
@@ -89,6 +91,25 @@ main>div.subgrid {
     border: 2px solid white;
     border-radius: 4px;
 }
+
+/* Button and menu styles */
+
+button {
+    position: relative;
+    border-radius: 4px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 2px solid black;
+    cursor: pointer;
+    padding: 3px;
+}
+
+button img {
+    background: var(--theme);
+    width: 30px;
+    height: 30px;
+}
 	</style>
 </head>
 <body>
@@ -99,55 +120,28 @@ main>div.subgrid {
     <div class="footer">
         <div>
             <h1>Game of Life</h1>
-            <button id="button-next">Next</button>
+            <button id="button-next"><img src="icon-next.svg"></button>
+            <button id="button-clear"><img src="icon-clear.svg"></button>
+            <button id="button-play"><img src="icon-play.svg"></button>
+            <button id="button-select-single"><img src="icon-select-single.svg"></button>
+            <button id="button-select-multiple"><img src="icon-select-multiple.svg"></button>
+            <button id="button-zoom"><img src="icon-zoom.svg"></button>
         </div>
         <p>By&nbsp;<a href="https://miles.knightpuzzle.com">Miles</a></p>
     </div>
 
     <script>
+
+// Improve: Make split better (otherwise ok)
 let zoom = 10; // Width of cells (px)
 let posX = 5; // One unit is one cell
 let posY = 5;
-let state = [
-    { // Test glider subgrid
-        tl: [50, 40], // x, y
-        wh: [7, 6], // w, h
-        sq: [
-            [false, false, false, false, false, false, false],
-            [false, false, true , false, false, true , false],
-            [false, true , false, false, false, false, false],
-            [false, true , false, false, false, true , false],
-            [false, true , true , true , true , false, false],
-            [false, false, false, false, false, false, false],
-        ],
-    },
-    { // Test glider subgrid
-        tl: [40, 35], // x, y
-        wh: [5, 5], // w, h
-        sq: [
-            [false, false, false, false, false],
-            [false, false, false, true , false],
-            [false, true , false, true , false],
-            [false, false, true , true , false],
-            [false, false, false, false, false],
-        ],
-    },
-    { // Random block
-        tl: [38, 43], // x, y
-        wh: [5, 5], // w, h
-        sq: [
-            [false, false, false, false, false],
-            [false, true, true, false, false],
-            [false, true, true, false, false],
-            [false, false, false, false, false],
-            [false, false, false, false, false],
-        ],
-    }
-]
+let state = [];
 
 function showState() {
     let main = document.querySelector("main");
     main.innerHTML = "";
+    let i = 0;
     for (let subgrid of state) {
         // Show subgrid for testing
         let top = (subgrid.tl[1] + posY) * zoom;
@@ -168,6 +162,7 @@ function showState() {
             }
             relY++;
         }
+        i++;
     }
     main.style.backgroundPositionX = (posX%1 + 0.5)*zoom+"px";
     main.style.backgroundPositionY = (posY%1 + 0.5)*zoom+"px";
@@ -175,9 +170,11 @@ function showState() {
 }
 
 function stateReshape() {
+    let i = 0;
     for (let subgrid of state) {
         // Check that subgrid metadata exists
         if (subgrid.blank) {null /* Yes */} else {continue /* Skip */};
+        i++;
 
         // Expand grid
         if (subgrid.blank[1][0]) {
@@ -269,6 +266,7 @@ function stateMerge() {
                 ) {
                     // Execute merging
                     merging = true;
+                    console.log("MERGE");
 
                     // i = Index of first subgrid
                     let subgrid1 = subgrid; // First subgrid
@@ -291,7 +289,12 @@ function stateMerge() {
                             - Math.min(subgrid1.tl[1], subgrid2.tl[1]),
                         ],
                         sq: [],
+                        blank: [],
                     }
+                    newSubgrid.blank = [
+                        Array(newSubgrid.wh[0]).fill(false),
+                        Array(newSubgrid.wh[1]).fill(false)
+                    ]
                     
                     // Fill new subgrid with the correct squares
                     newSubgrid.sq = Array(newSubgrid.wh[1]);
@@ -321,6 +324,13 @@ function stateMerge() {
                                 xRelativeTo2 < subgrid2.wh[0] - 1 &&
                                 subgrid2.sq[yRelativeTo2][xRelativeTo2]
                             )
+
+                            // If cell has become alive
+                            if (newSubgrid.sq[y][x]) {
+                                // Store in blank metadata
+                                newSubgrid.blank[0][x] = true;
+                                newSubgrid.blank[1][y] = true;
+                            }
                         }
                     }
 
@@ -379,6 +389,7 @@ function stateSplit() {
                 if (countGap >= 2) {
                     // Execute splitting
                     splitting = true;
+                    console.log("SPLIT");
 
                     // Gap position calculations
                     let splitIndex = columnNum - countGap + 1;
@@ -403,6 +414,14 @@ function stateSplit() {
                         ],
                         sq: [],
                     };
+                    leftSubgrid.blank = [
+                        Array(leftSubgrid.wh[0]).fill(false),
+                        Array(leftSubgrid.wh[1]).fill(false)
+                    ]
+                    rightSubgrid.blank = [
+                        Array(rightSubgrid.wh[0]).fill(false),
+                        Array(rightSubgrid.wh[1]).fill(false)
+                    ]
 
                     // Copy over cell states to subgrids
                     leftSubgrid.sq = Array(leftSubgrid.wh[1]);
@@ -417,6 +436,13 @@ function stateSplit() {
 
                             // Copy over cell states to new subgrids
                             leftSubgrid.sq[y][x] = subgrid.sq[yRelativeToInitial][xRelativeToInitial];
+
+                            // If cell is now alive
+                            if (leftSubgrid.sq[y][x]) {
+                                // Store in blank metadata
+                                leftSubgrid.blank[0][x] = true;
+                                leftSubgrid.blank[1][y] = true;
+                            }
                         }
                     }
                     rightSubgrid.sq = Array(rightSubgrid.wh[1]);
@@ -431,6 +457,13 @@ function stateSplit() {
 
                             // Copy over cell states to new subgrids
                             rightSubgrid.sq[y][x] = subgrid.sq[yRelativeToInitial][xRelativeToInitial];
+
+                            // If cell is now alive
+                            if (rightSubgrid.sq[y][x]) {
+                                // Store in blank metadata
+                                rightSubgrid.blank[0][x] = true;
+                                rightSubgrid.blank[1][y] = true;
+                            }
                         }
                     }
 
@@ -468,6 +501,7 @@ function stateSplit() {
                 if (countGap >= 2) {
                     // Execute splitting
                     splitting = true;
+                    console.log("SPLIT");
 
                     // Gap position calculations
                     let splitIndex = rowNum - countGap + 1;
@@ -480,6 +514,7 @@ function stateSplit() {
                             splitIndex+1, // Height + 1 (margin of blank cells)
                         ],
                         sq: [],
+                        blank: [],
                     };
                     let bottomSubgrid = {
                         tl: [
@@ -491,9 +526,18 @@ function stateSplit() {
                             subgrid.wh[1] - splitIndex - countGap + 1 // Height
                         ],
                         sq: [],
+                        blank: [],
                     };
+                    topSubgrid.blank = [
+                        Array(topSubgrid.wh[0]).fill(false),
+                        Array(topSubgrid.wh[1]).fill(false)
+                    ]
+                    bottomSubgrid.blank = [
+                        Array(bottomSubgrid.wh[0]).fill(false),
+                        Array(bottomSubgrid.wh[1]).fill(false)
+                    ]
 
-                    // Copy over cell states to subgrids
+                    // Copy over cell states to both new subgrids
                     topSubgrid.sq = Array(topSubgrid.wh[1]);
                     for (let y=0; y<topSubgrid.wh[1]; y++) {
                         topSubgrid.sq[y] = Array(topSubgrid.wh[0]);
@@ -506,6 +550,13 @@ function stateSplit() {
 
                             // Copy over cell states to new subgrids
                             topSubgrid.sq[y][x] = subgrid.sq[yRelativeToInitial][xRelativeToInitial];
+
+                            // If cell is now alive
+                            if (topSubgrid.sq[y][x]) {
+                                // Store in blank metadata
+                                topSubgrid.blank[0][x] = true;
+                                topSubgrid.blank[1][y] = true;
+                            }
                         }
                     }
                     bottomSubgrid.sq = Array(bottomSubgrid.wh[1]);
@@ -520,6 +571,13 @@ function stateSplit() {
 
                             // Copy over cell states to new subgrids
                             bottomSubgrid.sq[y][x] = subgrid.sq[yRelativeToInitial][xRelativeToInitial];
+
+                            // If cell is now alive
+                            if (bottomSubgrid.sq[y][x]) {
+                                // Store in blank metadata
+                                bottomSubgrid.blank[0][x] = true;
+                                bottomSubgrid.blank[1][y] = true;
+                            }
                         }
                     }
 
@@ -627,38 +685,64 @@ function stateNext() {
     }
 
     // Tidy up
-    stateMerge(); // IMPORTANT
-    stateSplit();
     stateReshape();
     stateDeleteTrivial();
-
-    // Update
-    showState();
-}
-
-function stateManageSubgrids() {
+    stateSplit();
     stateMerge();
-    stateSplit();
     stateReshape();
     stateDeleteTrivial();
-    
+
     // Update
     showState();
 }
 
 function stateSquareClick(x, y) {
     let onSubgrid = false;
+
     // If on a subgrid already
     for (let subgrid of state) {
         if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
+            let relativeX = x - subgrid.tl[0];
+            let relativeY = y - subgrid.tl[1];
+            
             // Toggle square
-            subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]] = !subgrid.sq[y-subgrid.tl[1]][x-subgrid.tl[0]];
+            subgrid.sq[relativeY][relativeX] = !subgrid.sq[relativeY][relativeX];
+
+            // See if blank metadata needs changing
+            // If square was toggled off
+            if (!subgrid.sq[relativeY][relativeX]) {
+                // Check the row for all dead cells
+                let alive = false;
+                for (let checkX=0; checkX<subgrid.wh[0]; checkX++) {
+                    if (subgrid.sq[relativeY][checkX]) {
+                        alive = true;
+                        break
+                    }
+                }
+                if (!alive) {
+                    subgrid.blank[1][relativeY] = false;
+                }
+
+                // Check the column for all dead cells
+                alive = false;
+                for (let checkY=0; checkY<subgrid.wh[1]; checkY++) {
+                    if (subgrid.sq[checkY][relativeX]) {
+                        alive = true;
+                        break
+                    }
+                }
+                if (!alive) {
+                    subgrid.blank[0][relativeX] = false;
+                }
+            }
+
+            // Stop function, don't execute the 'not on subgrid' code
             onSubgrid = true;
             break;
         }
     }
 
-    // If not on subgrid, create new
+    // If not on subgrid, create new and merge if needed
     if (!onSubgrid) {
         state.push({
             wh: [3, 3],
@@ -668,10 +752,17 @@ function stateSquareClick(x, y) {
                 [false, true, false],
                 [false, false, false],
             ],
+            blank: [
+                [false, true, false],
+                [false, true, false]
+            ]
         });
     }
 
     // Tidy up
+    stateReshape();
+    stateDeleteTrivial();
+    stateSplit();
     stateMerge();
     stateReshape();
     stateDeleteTrivial();
@@ -685,6 +776,10 @@ document.querySelector("main").addEventListener("click", function(e) {
     let gridX = Math.floor(e.clientX/zoom - posX);
     let gridY = Math.floor(e.clientY/zoom - posY);
     stateSquareClick(gridX, gridY);
+});
+
+document.querySelector("main").addEventListener("", function(e) {
+    console.log("drag")
 });
 
 document.getElementById("button-next").addEventListener("click", stateNext);
