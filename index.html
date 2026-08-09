@@ -88,6 +88,28 @@ div.sidebar {
     height: calc(100% - 80px);
     background-color: white;
     z-index: 3;
+
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    padding: 20px;
+}
+
+div.sidebar-table {
+    width: 100%;
+    background-color: #dddddd;
+    border-radius: 15px;
+}
+
+div.sidebar-item {
+    width: 100%;
+    height: 30px;
+    margin: 0 0 5px;
+    border-radius: 15px;
+    cursor: pointer;
+    padding: 0 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 /* Main styles */
@@ -99,12 +121,26 @@ div.sidebar {
 html {
     --theme: #22ed9b;
     --theme-2: #cf1785;
+    --theme-2-transparent: #cf178544;
 }
 
 html, body {
     margin: 0;
     background-color: #11151b;
     overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+    margin: 0 0 10px;
+}
+
+h2 {
+    font-size: 24pt;
+    color: var(--theme-2) !important;
+}
+
+p {
+    font-size: 12pt;
 }
 
 /* Grid styles */
@@ -126,6 +162,9 @@ main>div.square {
     position: absolute;
     background-color: var(--theme);
     aspect-ratio: 1;
+}
+main>div.square.fade {
+    background-color: #dddddd !important;
 }
 main>div.subgrid {
     position: absolute;
@@ -189,6 +228,7 @@ div.slider>div.slider-knob {
     
     background-color: var(--theme-2);
     border-radius: 999px;
+    box-shadow: 0 0 0 5px var(--theme-2-transparent);
 }
 
 div.slider>p {
@@ -229,9 +269,14 @@ div.button-divider {
             <h1>Game of Life</h1>
             <button id="button-next"><img src="icon-next.svg"></button>
 
-            <button id="button-play"><img src="icon-play.svg"></button>
             <div>
-                <input type="range">
+                <button id="button-play"><img src="icon-play.svg"></button>
+                <div class="slider">
+                    <input id="input-speed" type="range" min="0" max="7">
+                    <div class="slider-track"></div>
+                    <div id="input-speed-knob" class="slider-knob"></div>
+                    <p id="input-speed-name"></p>
+                </div>
             </div>
 
             <div class="button-divider"></div>
@@ -250,15 +295,21 @@ div.button-divider {
 
             <button id="button-single"><img src="icon-single.svg"></button>
             <button id="button-multiple"><img src="icon-multiple.svg"></button>
-            <button id="button-clear"><img src="icon-clear.svg"></button>
-            
             <button id="button-info"><img src="icon-info.svg"></button>
+            
+            <div class="button-divider"></div>
+            
+            <button id="button-clear"><img src="icon-clear.svg"></button>
         </div>
         <p>By&nbsp;<a href="https://miles.knightpuzzle.com">Miles</a></p>
     </div>
 
-    <div class="sidebar">
-        Hello
+    <div class="sidebar sidebar-objects">
+        <h2>Objects</h2>
+        <p>List</p>
+        <div class="sidebar-table">
+            <div class="sidebar-item">Glider</div>
+        </div>
     </div>
 
     <script>
@@ -269,31 +320,42 @@ let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [];
 let generation = 0;
+let globalMode = "C"; // Cell, object or info mode
 
 let screenWidth = window.innerWidth;
-let screenHeight = window.innerHeight;
+let screenHeight = window.innerHeight - 80;
 
 function showState() {
     let main = document.querySelector("main");
     let blob = document.querySelector(".blob");
+    let objList = document.querySelector(".sidebar-table");
     blob.innerText = generation;
     main.innerHTML = "";
+    objList.innerHTML = "";
     let i = 0;
     for (let subgrid of state) {
-        // Show subgrid for testing
-        let top = (subgrid.tl[1] + posY) * zoom + screenHeight/2;
-        let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
-        let width = subgrid.wh[0] * zoom;
-        let height = subgrid.wh[1] * zoom;
-        main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${parseInt(zoom/6)}px;"></div>`
+        // Add to list in sidebar
+        objList.innerHTML += `<div class="sidebar-item">Object</div>`
+
+        // Show subgrid outline if on object mode
+        if (globalMode == "O") {
+            let top = (subgrid.tl[1] + posY) * zoom + screenHeight/2;
+            let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
+            let width = subgrid.wh[0] * zoom;
+            let height = subgrid.wh[1] * zoom;
+            main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;"></div>`;
+        }
+
+        let activeClass = subgrid.active ? "" : "fade"
+        
         let relY = 0;
         for (let row of subgrid.sq) {
             let relX = 0;
             for (let cell of row) {
                 if (cell) {
-                    top = (subgrid.tl[1] + relY + posY) * zoom + screenHeight/2;
-                    left = (subgrid.tl[0] + relX + posX) * zoom + screenWidth/2;
-                    main.innerHTML += `<div class="square" style="top:${top}px; left:${left}px; width:${zoom}px;"></div>`
+                    let top = (subgrid.tl[1] + relY + posY) * zoom + screenHeight/2;
+                    let left = (subgrid.tl[0] + relX + posX) * zoom + screenWidth/2;
+                    main.innerHTML += `<div class="square ${activeClass}" style="top:${top}px; left:${left}px; width:${zoom}px;"></div>`
                 }
                 relX++;
             }
@@ -301,8 +363,8 @@ function showState() {
         }
         i++;
     }
-    main.style.backgroundPositionX = (posX%1 + 0.5)*zoom +"px";
-    main.style.backgroundPositionY = (posY%1 + 0.5)*zoom +"px"; // HERE
+    main.style.backgroundPositionX = (posX*zoom + screenWidth/2)%zoom + 0.5*zoom +"px";
+    main.style.backgroundPositionY = (posY*zoom + screenHeight/2)%zoom + 0.5*zoom +"px"; // HERE
     main.style.backgroundSize = zoom+"px";
 }
 
@@ -427,6 +489,7 @@ function stateMerge() {
                         ],
                         sq: [],
                         blank: [],
+                        active: true,
                     }
                     newSubgrid.blank = [
                         Array(newSubgrid.wh[0]).fill(false),
@@ -541,10 +604,11 @@ function stateSplit() {
                             subgrid.wh[1] // Height
                         ],
                         sq: [],
+                        active: true,
                     };
                     let rightSubgrid = {
                         tl: [
-                            subgrid.tl[0] + splitIndex+1, // X position
+                            subgrid.tl[0] + splitIndex + countGap - 1, // X position
                             subgrid.tl[1] // Y position
                         ],
                         wh: [
@@ -552,6 +616,7 @@ function stateSplit() {
                             subgrid.wh[1] // Height
                         ],
                         sq: [],
+                        active: true,
                     };
                     leftSubgrid.blank = [
                         Array(leftSubgrid.wh[0]).fill(false),
@@ -654,11 +719,12 @@ function stateSplit() {
                         ],
                         sq: [],
                         blank: [],
+                        active: true,
                     };
                     let bottomSubgrid = {
                         tl: [
                             subgrid.tl[0], // X position
-                            subgrid.tl[1] + splitIndex+1 // Y position
+                            subgrid.tl[1] + splitIndex + countGap - 1 // Y position
                         ],
                         wh: [
                             subgrid.wh[0], // Width
@@ -666,6 +732,7 @@ function stateSplit() {
                         ],
                         sq: [],
                         blank: [],
+                        active: true,
                     };
                     topSubgrid.blank = [
                         Array(topSubgrid.wh[0]).fill(false),
@@ -757,6 +824,9 @@ function stateNext() {
 
     // Next state for all subgrids
     for (let subgrid of state) {
+        // If stable thing, leave alone
+        if (!subgrid.active) {continue};
+
         // Subgrid metadata for empty rows/columns
         subgrid.blank = [
             Array(subgrid.wh[0]).fill(false),
@@ -767,7 +837,7 @@ function stateNext() {
         let newgrid = structuredClone(subgrid);
 
         // Flag for active or stable state
-        null; // IN PROGRESS
+        let active = false;
 
         // Individual cell changes
         for (let y=0; y<subgrid.wh[1]; y++) {
@@ -815,12 +885,16 @@ function stateNext() {
                     // Cell with 4+ neighbours dies
                     newgrid.sq[y][x] = false;
                 }
+                if (newgrid.sq[y][x] != subgrid.sq[y][x]) {
+                    active = true;
+                }
             }
         }
 
         // Apply individual cell changes to new generation grid
         subgrid.sq = newgrid.sq;
         subgrid.blank = newgrid.blank;
+        subgrid.active = active;
         
         // Used to have reshape code inside loop
         // Sadly, not any more
@@ -897,7 +971,8 @@ function stateSquareClick(x, y) {
             blank: [
                 [false, true, false],
                 [false, true, false]
-            ]
+            ],
+            active: true,
         });
     }
 
@@ -920,6 +995,53 @@ function stateClear() {
     showState();
 }
 
+function updateMode(mode) {
+    let sidebar = document.querySelector(".sidebar-objects");
+    let buttonSingle = document.getElementById("button-single");
+    let buttonMultiple = document.getElementById("button-multiple");
+    globalMode = mode;
+    if (mode == "C") {
+        // Cell-level editing
+        sidebar.style.right = "-400px";
+        sidebar.style.visibility = "none";
+        buttonSingle.className = "on";
+        buttonMultiple.className = "off";
+        screenWidth = window.innerWidth;
+    } else if (mode == "O") {
+        // Object-level editing
+        sidebar.style.right = "0px";
+        sidebar.style.visibility = "visible";
+        buttonSingle.className = "off";
+        buttonMultiple.className = "on";
+        screenWidth = window.innerWidth - 400;
+    } else if (mode == "I") {
+
+    }
+    showState();
+}
+
+function updateZoom() {
+    let input = document.getElementById("input-zoom");
+
+    // Update slider knob position
+    let knob = document.getElementById("input-zoom-knob");
+    knob.style.left = (15*input.value)+"px";
+
+    const zooms = [4, 6, 9, 10, 12, 16, 20, 30];
+    const zoomnames = ["Pixel View", "Large Scale Map", "Big Picture", "Expansion", "Normal Enough", "Clear Focus", "Interaction Detail", "Nitty Gritty"];
+
+    // Update zoom name
+    let name = document.getElementById("input-zoom-name");
+    name.innerHTML = zoomnames[input.value] + " &middot; " + zooms[input.value] + "px";
+
+    // Update actual zoom
+    zoom = zooms[input.value];
+    showState();
+}
+
+// Event listeners
+
+// Click on grid
 document.querySelector("main").addEventListener("click", function(e) {
     // Calculate cell coordinates clicked
     let gridX = Math.floor((e.clientX - screenWidth/2)/zoom - posX);
@@ -927,10 +1049,12 @@ document.querySelector("main").addEventListener("click", function(e) {
     stateSquareClick(gridX, gridY);
 });
 
-document.querySelector("main").addEventListener("", function(e) {
+// Drag on grid
+/*document.querySelector("main").addEventListener("", function(e) {
     console.log("drag")
-});
+});*/
 
+// Buttons
 document.getElementById("button-next").addEventListener("click", stateNext);
 document.getElementById("button-clear").addEventListener("click", stateClear);
 
@@ -939,40 +1063,29 @@ document.querySelector(".blob").addEventListener("click", function() {
     this.innerText = "0";
 });
 
-document.getElementById("button-multiple").addEventListener("click", function() {
-    let sidebar = document.querySelector(".sidebar");
-    sidebar.style.right = "0px";
-    sidebar.style.visibility = "visible";
-    this.className = "on";
-});
-
 document.getElementById("button-single").addEventListener("click", function() {
-    let sidebar = document.querySelector(".sidebar");
-    sidebar.style.right = "";
-    sidebar.style.visibility = "none";
-    document.getElementById("button-multiple").className = "";
+    updateMode("C") // Cells
 });
 
-function updateZoom() {
-    // Update slider knob position
-    let knob = document.getElementById("input-zoom-knob");
-    knob.style.left = (15*this.value)+"px";
+document.getElementById("button-multiple").addEventListener("click", function() {
+    updateMode("O"); // Objects
+});
 
-    const zooms = [6, 8, 9, 10, 12, 16, 20, 30];
-    const zoomnames = ["Pixel View", "Large Scale Map", "Big Picture", "Expansion", "Normal Enough", "Clear Focus", "Interaction Detail", "Nitty Gritty"];
+document.getElementById("button-info").addEventListener("click", function() {
+    updateMode("I"); // Objects
+});
 
-    // Update zoom name
-    let name = document.getElementById("input-zoom-name");
-    name.innerHTML = zoomnames[this.value] + " &middot; " + zooms[this.value] + "px";
+// Final updates
 
-    // Update actual zoom
-    zoom = zooms[this.value];
-    showState();
-}
+// Update zoom
 document.getElementById("input-zoom").addEventListener("input", updateZoom);
 document.getElementById("input-zoom").value = 5;
 updateZoom();
 
+// Update mode
+updateMode("O");
+
+// Update grid
 showState();
     </script>
 </body>
