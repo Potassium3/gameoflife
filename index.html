@@ -16,8 +16,8 @@ div.footer {
     bottom: 0;
     height: 80px;
     background-color: white;
-    box-shadow: 0 0 8px #7f7f7f;
-    z-index: 9;
+    box-shadow: 0 0 16px #000000;
+    z-index: 2;
     padding: 20px;
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
     justify-content: space-between;
@@ -45,10 +45,49 @@ div.footer p {
 div.footer a {
     color: #cd1e24;
 }
-div.footer div {
+div.footer div { /* Added */
     display: flex;
     flex-direction: row;
     gap: 10px;
+}
+div.footer>div>:nth-child(2) { /* Added */
+    background-color: var(--theme);
+}
+
+/* Blob styles */
+
+button.blob {
+    position: absolute;
+    bottom: 100px;
+    left: 20px;
+    height: 40px;
+    width: fit-content;
+    min-width: 40px;
+    z-index: 1;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background-color: white;
+    border-radius: 999px;
+    box-shadow: 0 0 16px #000000;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 16pt;
+    cursor: pointer;
+}
+
+/* Sidebar styles */
+
+div.sidebar {
+    position: absolute;
+    top: 0;
+    right: -400px;
+    transition: right 0.5s;
+    width: 400px;
+    height: calc(100% - 80px);
+    background-color: white;
+    z-index: 3;
 }
 
 /* Main styles */
@@ -59,12 +98,13 @@ div.footer div {
 
 html {
     --theme: #22ed9b;
-    --theme-2: #31ba84;
+    --theme-2: #cf1785;
 }
 
 html, body {
     margin: 0;
     background-color: #11151b;
+    overflow-x: hidden;
 }
 
 /* Grid styles */
@@ -79,6 +119,7 @@ main {
     background-position: top left;
     background-position-x: 0px; /* Script.js */
     background-position-y: 0px; /* Script.js */
+    z-index: 0;
 }
 
 main>div.square {
@@ -95,7 +136,7 @@ main>div.subgrid {
 /* Button and menu styles */
 
 button {
-    border-radius: 4px;
+    border-radius: 10px;
     width: 40px;
     height: 40px;
     border: none;
@@ -108,35 +149,116 @@ button img {
     width: 100%;
     height: 100%;
 }
+
+div.slider {
+    width: 125px; /* Max x plus 20px */
+    height: 100%;
+    position: relative;
+}
+
+div.slider>input {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    
+    opacity: 0;
+    z-index: 999;
+    cursor: pointer;
+}
+
+div.slider>div.slider-track {
+    position: absolute;
+    top: 15px;
+    height: 10px;
+    left: 0;
+    width: 100%;
+    
+    background-color: #dddddd;
+    border-radius: 999px;
+}
+
+div.slider>div.slider-knob {
+    position: absolute;
+    top: 10px;
+    height: 20px;
+    left: 0;
+    width: 20px;
+    
+    background-color: var(--theme-2);
+    border-radius: 999px;
+}
+
+div.slider>p {
+    position: absolute;
+    top: 30px;
+    height: 10px;
+    left: 0;
+    
+    color: #888888;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 8pt;
+}
+
+div.button-divider {
+    height: 100%;
+    border: 2px solid #dddddd;
+}
+
+.on {
+    box-shadow: 0px 50px 0px var(--theme);
+}
 	</style>
 </head>
 <body>
+
+    <!-- grid, blob, footer, sidebar -->
     <main>
-        
+        <!-- javascript -->
     </main>
+
+    <button class="blob">
+        E
+        <!-- javascript -->
+    </button>
 
     <div class="footer">
         <div>
             <h1>Game of Life</h1>
             <button id="button-next"><img src="icon-next.svg"></button>
-            <button id="button-select-single"><img src="icon-select-single.svg"></button>
-            <button id="button-select-multiple"><img src="icon-select-multiple.svg"></button>
-            <button id="button-clear"><img src="icon-clear.svg"></button>
-            
+
             <button id="button-play"><img src="icon-play.svg"></button>
             <div>
-                <button id="button-speed"><img src="icon-speed.svg"></button>
                 <input type="range">
             </div>
 
+            <div class="button-divider"></div>
+
             <div>
                 <button id="button-zoom"><img src="icon-zoom.svg"></button>
-                <input type="range">
+                <div class="slider">
+                    <input id="input-zoom" type="range" min="0" max="7">
+                    <div class="slider-track"></div>
+                    <div id="input-zoom-knob" class="slider-knob"></div>
+                    <p id="input-zoom-name"></p>
+                </div>
             </div>
+
+            <div class="button-divider"></div>
+
+            <button id="button-single"><img src="icon-single.svg"></button>
+            <button id="button-multiple"><img src="icon-multiple.svg"></button>
+            <button id="button-clear"><img src="icon-clear.svg"></button>
             
             <button id="button-info"><img src="icon-info.svg"></button>
         </div>
         <p>By&nbsp;<a href="https://miles.knightpuzzle.com">Miles</a></p>
+    </div>
+
+    <div class="sidebar">
+        Hello
     </div>
 
     <script>
@@ -146,25 +268,31 @@ let zoom = 10; // Width of cells (px)
 let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [];
+let generation = 0;
+
+let screenWidth = window.innerWidth;
+let screenHeight = window.innerHeight;
 
 function showState() {
     let main = document.querySelector("main");
+    let blob = document.querySelector(".blob");
+    blob.innerText = generation;
     main.innerHTML = "";
     let i = 0;
     for (let subgrid of state) {
         // Show subgrid for testing
-        let top = (subgrid.tl[1] + posY) * zoom;
-        let left = (subgrid.tl[0] + posX) * zoom;
+        let top = (subgrid.tl[1] + posY) * zoom + screenHeight/2;
+        let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
         let width = subgrid.wh[0] * zoom;
         let height = subgrid.wh[1] * zoom;
-        main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px"></div>`
+        main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${parseInt(zoom/6)}px;"></div>`
         let relY = 0;
         for (let row of subgrid.sq) {
             let relX = 0;
             for (let cell of row) {
                 if (cell) {
-                    top = (subgrid.tl[1] + relY + posY) * zoom;
-                    left = (subgrid.tl[0] + relX + posX) * zoom;
+                    top = (subgrid.tl[1] + relY + posY) * zoom + screenHeight/2;
+                    left = (subgrid.tl[0] + relX + posX) * zoom + screenWidth/2;
                     main.innerHTML += `<div class="square" style="top:${top}px; left:${left}px; width:${zoom}px;"></div>`
                 }
                 relX++;
@@ -173,8 +301,8 @@ function showState() {
         }
         i++;
     }
-    main.style.backgroundPositionX = (posX%1 + 0.5)*zoom+"px";
-    main.style.backgroundPositionY = (posY%1 + 0.5)*zoom+"px";
+    main.style.backgroundPositionX = (posX%1 + 0.5)*zoom +"px";
+    main.style.backgroundPositionY = (posY%1 + 0.5)*zoom +"px"; // HERE
     main.style.backgroundSize = zoom+"px";
 }
 
@@ -321,15 +449,15 @@ function stateMerge() {
                             // If alive squares in that position in either of the subgrids
                             newSubgrid.sq[y][x] = // Boolean assignment
                             (
-                                yRelativeTo1 >= 0 && // Check position is ON the smaller subgrids
+                                yRelativeTo1 >= 1 && // Check position is ON the smaller subgrids
                                 yRelativeTo1 < subgrid1.wh[1] - 1 &&
-                                xRelativeTo1 >= 0 &&
+                                xRelativeTo1 >= 1 &&
                                 xRelativeTo1 < subgrid1.wh[0] - 1 &&
                                 subgrid1.sq[yRelativeTo1][xRelativeTo1]
                             ) || (
-                                yRelativeTo2 >= 0 && // Check position is ON the smaller subgrids
+                                yRelativeTo2 >= 1 && // Check position is ON the smaller subgrids
                                 yRelativeTo2 < subgrid2.wh[1] - 1 &&
-                                xRelativeTo2 >= 0 &&
+                                xRelativeTo2 >= 1 &&
                                 xRelativeTo2 < subgrid2.wh[0] - 1 &&
                                 subgrid2.sq[yRelativeTo2][xRelativeTo2]
                             )
@@ -349,11 +477,13 @@ function stateMerge() {
                     state.push(newSubgrid);
                 }
                 j++;
+                if (merging) {break};
             }
 
             // Add current subgrid to list of subgrid positions
             positions.push([subgrid.tl, subgrid.wh])
             i++;
+            if (merging) {break}
         }
     }
 }
@@ -611,6 +741,9 @@ function stateSplit() {
 // (button and click functions; Life rules)
 
 function stateNext() {
+    // Increment generation count
+    generation++;
+
     const NEIGHBOURS = [ // Vectors
         [0, 1],
         [1, 1],
@@ -631,7 +764,7 @@ function stateNext() {
         ]
 
         // Create new generation grid
-        newgrid = structuredClone(subgrid);
+        let newgrid = structuredClone(subgrid);
 
         // Flag for active or stable state
         null; // IN PROGRESS
@@ -789,8 +922,8 @@ function stateClear() {
 
 document.querySelector("main").addEventListener("click", function(e) {
     // Calculate cell coordinates clicked
-    let gridX = Math.floor(e.clientX/zoom - posX);
-    let gridY = Math.floor(e.clientY/zoom - posY);
+    let gridX = Math.floor((e.clientX - screenWidth/2)/zoom - posX);
+    let gridY = Math.floor((e.clientY - screenHeight/2)/zoom - posY);
     stateSquareClick(gridX, gridY);
 });
 
@@ -800,6 +933,45 @@ document.querySelector("main").addEventListener("", function(e) {
 
 document.getElementById("button-next").addEventListener("click", stateNext);
 document.getElementById("button-clear").addEventListener("click", stateClear);
+
+document.querySelector(".blob").addEventListener("click", function() {
+    generation = 0;
+    this.innerText = "0";
+});
+
+document.getElementById("button-multiple").addEventListener("click", function() {
+    let sidebar = document.querySelector(".sidebar");
+    sidebar.style.right = "0px";
+    sidebar.style.visibility = "visible";
+    this.className = "on";
+});
+
+document.getElementById("button-single").addEventListener("click", function() {
+    let sidebar = document.querySelector(".sidebar");
+    sidebar.style.right = "";
+    sidebar.style.visibility = "none";
+    document.getElementById("button-multiple").className = "";
+});
+
+function updateZoom() {
+    // Update slider knob position
+    let knob = document.getElementById("input-zoom-knob");
+    knob.style.left = (15*this.value)+"px";
+
+    const zooms = [6, 8, 9, 10, 12, 16, 20, 30];
+    const zoomnames = ["Pixel View", "Large Scale Map", "Big Picture", "Expansion", "Normal Enough", "Clear Focus", "Interaction Detail", "Nitty Gritty"];
+
+    // Update zoom name
+    let name = document.getElementById("input-zoom-name");
+    name.innerHTML = zoomnames[this.value] + " &middot; " + zooms[this.value] + "px";
+
+    // Update actual zoom
+    zoom = zooms[this.value];
+    showState();
+}
+document.getElementById("input-zoom").addEventListener("input", updateZoom);
+document.getElementById("input-zoom").value = 5;
+updateZoom();
 
 showState();
     </script>
