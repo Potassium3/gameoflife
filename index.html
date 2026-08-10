@@ -88,6 +88,7 @@ div.sidebar {
     height: calc(100% - 80px);
     background-color: white;
     z-index: 3;
+    overflow-y: auto;
 
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
     padding: 20px;
@@ -110,6 +111,47 @@ div.sidebar-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+button.sidebar-button {
+    width: fit-content;
+    height: 30px;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    background-color: #dddddd;
+    border-radius: 999px;
+    box-shadow: none !important;
+}
+
+div.sidebar-nav {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 10px;
+}
+
+div.sidebar-header {
+    margin: 0 0 10px;
+    position: sticky;
+    top: 0;
+}
+
+div.sidebar-nav>* {
+    flex-grow: 1;
+    background-color: #dddddd;
+}
+div.sidebar-nav>.on {
+    flex-grow: 1;
+    background-color: var(--theme);
+}
+div.sidebar-nav>:not(:first-child) {
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+div.sidebar-nav>:not(:last-child) {
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
 }
 
 /* Main styles */
@@ -306,10 +348,46 @@ div.button-divider {
 
     <div class="sidebar sidebar-objects">
         <h2>Objects</h2>
-        <p>List</p>
-        <div class="sidebar-table">
-            <div class="sidebar-item">Glider</div>
+        <div class="sidebar-header">
+            <div class="sidebar-nav">
+                <button class="sidebar-button on">List</button>
+                <button class="sidebar-button" id="sidebar-objects-add">Add</button>
+            </div>
+            <button class="sidebar-button" id="sidebar-objects-blah">Delete.</button>
         </div>
+        <div class="sidebar-table">
+            <!-- javascript -->
+        </div>
+    </div>
+
+    <div class="sidebar sidebar-add">
+        <h2>Add objects</h2>
+        <div class="sidebar-header">
+            <div class="sidebar-nav">
+                <button id="sidebar-objects-list">List</button>
+                <button class="on">Add</button>
+            </div>
+            <button id="sidebar-objects-blah">Eek.</button>
+        </div>
+        <div class="sidebar-table">
+            <!-- javascript -->
+        </div>
+    </div>
+
+    <div class="sidebar sidebar-info">
+        <h2>Game of Life</h2>
+        <p>Welcome to my Game of Life simulator!</p>
+        <h3>How to use</h3>
+        <p>On the bottom bar there are several controls, controlling:</p>
+        <ul>
+            <li>Next generation</li>
+            <li>Play/pause and speed</li>
+            <li>Zoom</li>
+            <li>Menus</li>
+            <li>Clearing board</li>
+        </ul>
+        <h3>How it works</h3>
+        <p>The code splits the infinite grid into small rectangular portions containing alive cells. The program only processes these squares. You can see these portions on the "Objects" menu.</p>
     </div>
 
     <script>
@@ -320,7 +398,8 @@ let posX = 5; // One unit is one cell
 let posY = 5;
 let state = [];
 let generation = 0;
-let globalMode = "C"; // Cell, object or info mode
+let globalMode = "C"; // Cell, object or info mode (C/O/I)
+let objectMode = "L"; // List, info or add objects (L/I/A)
 
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight - 80;
@@ -366,6 +445,11 @@ function showState() {
     main.style.backgroundPositionX = (posX*zoom + screenWidth/2)%zoom + 0.5*zoom +"px";
     main.style.backgroundPositionY = (posY*zoom + screenHeight/2)%zoom + 0.5*zoom +"px"; // HERE
     main.style.backgroundSize = zoom+"px";
+
+    // If no objects on grid
+    if (i == 0) {
+        objList.innerHTML = `<div class="sidebar-item">The board is empty.</div>`;   
+    }
 }
 
 function stateReshape() {
@@ -996,26 +1080,35 @@ function stateClear() {
 }
 
 function updateMode(mode) {
-    let sidebar = document.querySelector(".sidebar-objects");
+    let sidebarObjects = document.querySelector(".sidebar-objects");
+    let sidebarInfo = document.querySelector(".sidebar-info");
     let buttonSingle = document.getElementById("button-single");
     let buttonMultiple = document.getElementById("button-multiple");
+    let buttonMenu = document.getElementById("button-info");
     globalMode = mode;
     if (mode == "C") {
         // Cell-level editing
-        sidebar.style.right = "-400px";
-        sidebar.style.visibility = "none";
+        sidebarObjects.style.right = "-400px";
+        sidebarInfo.style.right = "-400px";
         buttonSingle.className = "on";
         buttonMultiple.className = "off";
+        buttonMenu.className = "off";
         screenWidth = window.innerWidth;
     } else if (mode == "O") {
         // Object-level editing
-        sidebar.style.right = "0px";
-        sidebar.style.visibility = "visible";
+        sidebarObjects.style.right = "0px";
+        sidebarInfo.style.right = "-400px";
         buttonSingle.className = "off";
         buttonMultiple.className = "on";
+        buttonMenu.className = "off";
         screenWidth = window.innerWidth - 400;
     } else if (mode == "I") {
-
+        sidebarObjects.style.right = "-400px";
+        sidebarInfo.style.right = "0px";
+        buttonSingle.className = "off";
+        buttonMultiple.className = "off";
+        buttonMenu.className = "on";
+        screenWidth = window.innerWidth - 400;
     }
     showState();
 }
