@@ -267,6 +267,8 @@ div.slider>div.slider-knob {
     height: 20px;
     left: 0;
     width: 20px;
+
+    transition: left 100ms;
     
     background-color: var(--theme-2);
     border-radius: 999px;
@@ -314,7 +316,7 @@ div.button-divider {
             <div>
                 <button id="button-play"><img src="icon-play.svg"></button>
                 <div class="slider">
-                    <input id="input-speed" type="range" min="0" max="7">
+                    <input id="input-speed" type="range" min="0" max="40">
                     <div class="slider-track"></div>
                     <div id="input-speed-knob" class="slider-knob"></div>
                     <p id="input-speed-name"></p>
@@ -396,13 +398,14 @@ div.button-divider {
 let zoom = 10; // Width of cells (px)
 let posX = 5; // One unit is one cell
 let posY = 5;
-let state = [];
 let generation = 0;
 let globalMode = "C"; // Cell, object or info mode (C/O/I)
 let objectMode = "L"; // List, info or add objects (L/I/A)
 
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight - 80;
+
+let state = [{"tl":[51,49],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[43,42],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[36,34],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[28,27],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[21,19],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[13,12],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[6,4],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[-14,-10],"wh":[10,9],"sq":[[false,false,false,false,false,false,false,false,false,false],[false,false,false,false,true,false,false,false,false,false],[false,false,false,true,true,true,true,false,false,false],[false,false,true,true,false,true,false,true,false,false],[false,true,true,true,false,true,false,false,true,false],[false,false,true,true,false,true,false,true,false,false],[false,false,false,true,true,true,true,false,false,false],[false,false,false,false,true,false,false,false,false,false],[false,false,false,false,false,false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,true,true,true,true,true,false],[false,true,true,true,true,true,true,true,false]]},{"tl":[-24,-8],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"tl":[10,-10],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"tl":[-4,-12],"wh":[8,9],"sq":[[false,false,false,false,false,false,false,false],[false,false,false,false,true,false,true,false],[false,false,true,false,false,false,true,false],[false,false,true,false,false,false,false,false],[false,true,false,false,false,false,true,false],[false,false,true,false,false,false,false,false],[false,false,true,false,false,false,true,false],[false,false,false,false,true,false,true,false],[false,false,false,false,false,false,false,false]],"blank":[[false,true,true,false,true,false,true,false],[false,true,true,true,true,true,true,true,false]],"active":true},{"tl":[-2,-3],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]}];
 
 function showState() {
     let main = document.querySelector("main");
