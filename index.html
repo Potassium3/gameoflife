@@ -213,8 +213,15 @@ main>div.square.fade {
 }
 main>div.subgrid {
     position: absolute;
+    z-index: 20;
     border: 2px solid white;
     border-radius: 4px;
+    cursor: pointer;
+}
+
+main>div.subgrid:hover {
+    border: 2px solid var(--theme-2);
+    background-color: var(--theme-2-transparent);
 }
 
 /* Button and menu styles */
@@ -1038,8 +1045,18 @@ function stateNext() {
 }
 
 function stateSquareClick(x, y) {
-    let onSubgrid = false;
+    // Separate code to execute in object mode when selecting object
+    if (globalMode == "O") {
+        let onSubgrid = false;
+        for (let subgrid of state) {
+            if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
+                objectSelect(subgrid.id);
+            }
+        }
+        return;
+    }
 
+    let onSubgrid = false;
     // If on a subgrid already
     for (let subgrid of state) {
         if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
@@ -1120,6 +1137,10 @@ function stateClear() {
 
     // Update
     showState();
+}
+
+function objectSelect(id) {
+    null;
 }
 
 function updateMode(mode) {
