@@ -135,6 +135,10 @@ div.sidebar-header {
     margin: 0 0 10px;
     position: sticky;
     top: 0;
+    background-color: #111111;
+    backdrop-filter: blur(2px);
+    padding: 10px;
+    border-radius: 15px;
 }
 
 div.sidebar-nav>* {
@@ -292,7 +296,7 @@ div.button-divider {
 }
 
 .on {
-    box-shadow: 0px 50px 0px var(--theme);
+    box-shadow: inset 0 0 0px 2px var(--theme);
 }
 	</style>
 </head>
@@ -355,7 +359,9 @@ div.button-divider {
                 <button class="sidebar-button on">List</button>
                 <button class="sidebar-button" id="sidebar-objects-add">Add</button>
             </div>
-            <button class="sidebar-button" id="sidebar-objects-blah">Delete.</button>
+            <button class="sidebar-button" id="sidebar-objects-delete">Delete</button>
+            <button class="sidebar-button" id="sidebar-objects-follow">Follow</button>
+            <button class="sidebar-button" id="sidebar-objects-blah">Freeze</button>
         </div>
         <div class="sidebar-table">
             <!-- javascript -->
@@ -395,10 +401,15 @@ div.button-divider {
     <script>
 
 // Improve: Make split better (otherwise ok)
-let zoom = 10; // Width of cells (px)
+let zoom; // Width of cells (px)
 let posX = 5; // One unit is one cell
 let posY = 5;
+
 let generation = 0;
+let play = false;
+let playIntervalID;
+let speedFrequency; // Number of generations per second
+
 let globalMode = "C"; // Cell, object or info mode (C/O/I)
 let objectMode = "L"; // List, info or add objects (L/I/A)
 
@@ -1128,11 +1139,40 @@ function updateZoom() {
 
     // Update zoom name
     let name = document.getElementById("input-zoom-name");
-    name.innerHTML = zoomnames[input.value] + " &middot; " + zooms[input.value] + "px";
+    name.innerHTML = zoomnames[input.value] + " &middot; " + zooms[input.value] + " px";
 
     // Update actual zoom
     zoom = zooms[input.value];
     showState();
+}
+
+function updateSpeed() {
+    let input = document.getElementById("input-speed");
+
+    // Update slider knob position
+    let knob = document.getElementById("input-speed-knob");
+    knob.style.left = (105/40*input.value)+"px";
+
+    // Update actual speed
+    speedFrequency = parseInt((
+
+        input.value < 25
+        ? (0.5 + (0.1*input.value))
+        : (3.0 + (0.5*(input.value - 25)))
+
+    )* 10 ) / 10; // Round to 1dp.
+
+    // Update speed label
+    let name = document.getElementById("input-speed-name");
+    name.innerHTML = speedFrequency >= 1
+        ? speedFrequency + " Hz"
+        : parseInt(1/speedFrequency * 10) / 10 + " s";
+    
+    // Refresh setInterval while playing
+    if (play) {
+        clearInterval(playIntervalID);
+        playIntervalID = setInterval(stateNext, parseInt(1000/speedFrequency));
+    }
 }
 
 // Event listeners
@@ -1159,6 +1199,18 @@ document.querySelector(".blob").addEventListener("click", function() {
     this.innerText = "0";
 });
 
+document.getElementById("button-play").addEventListener("click", function() {
+    if (play) {
+        clearInterval(playIntervalID);
+        play = false;
+        this.className = "";
+    } else {
+        playIntervalID = setInterval(stateNext, parseInt(1000/speedFrequency));
+        play = true;
+        this.className = "on";
+    }
+});
+
 document.getElementById("button-single").addEventListener("click", function() {
     updateMode("C") // Cells
 });
@@ -1177,6 +1229,11 @@ document.getElementById("button-info").addEventListener("click", function() {
 document.getElementById("input-zoom").addEventListener("input", updateZoom);
 document.getElementById("input-zoom").value = 5;
 updateZoom();
+
+// Update speed
+document.getElementById("input-speed").addEventListener("input", updateSpeed);
+document.getElementById("input-speed").value = 29;
+updateSpeed();
 
 // Update mode
 updateMode("O");
