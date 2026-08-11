@@ -98,6 +98,7 @@ div.sidebar-table {
     width: 100%;
     background-color: var(--theme-2-transparent);
     border-radius: 15px;
+    margin: 10px 0 10px;
 }
 
 div.sidebar-item {
@@ -113,12 +114,28 @@ div.sidebar-item {
     justify-content: space-between;
 }
 
+div.sidebar-item.selected {
+    background-color: var(--theme-2);
+}
+
 button.sidebar-button {
     width: fit-content;
     height: 30px;
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
     background-color: white;
     box-shadow: none !important;
+}
+
+button.sidebar-button.red {
+    background-color: var(--theme-2) !important;
+}
+
+button.sidebar-button.yellow {
+    background-color: var(--theme-3) !important;
+}
+
+button.sidebar-button.gray {
+    background-color: #dddddd;
 }
 
 div.sidebar-nav {
@@ -167,6 +184,7 @@ html {
     --theme: #22ed9b;
     --theme-2: #cf1785;
     --theme-2-transparent: #cf178544;
+    --theme-3: #fce046;
 }
 
 html, body {
@@ -211,6 +229,9 @@ main>div.square {
 main>div.square.fade {
     background-color: #dddddd !important;
 }
+main>div.square.red {
+    background-color: var(--theme-2) !important;
+}
 main>div.subgrid {
     position: absolute;
     z-index: 20;
@@ -219,9 +240,8 @@ main>div.subgrid {
     cursor: pointer;
 }
 
-main>div.subgrid:hover {
-    border: 2px solid var(--theme-2);
-    background-color: var(--theme-2-transparent);
+main>div.subgrid.selected {
+    background-color: #ffffff44;
 }
 
 /* Button and menu styles */
@@ -365,11 +385,13 @@ div.button-divider {
                 <button class="sidebar-button on">List</button>
                 <button class="sidebar-button" id="sidebar-objects-add">Add</button>
             </div>
-            <button class="sidebar-button" id="sidebar-objects-delete">Delete</button>
-            <button class="sidebar-button" id="sidebar-objects-follow">Follow</button>
-            <button class="sidebar-button" id="sidebar-objects-blah">Freeze</button>
+            <button class="sidebar-button red" id="sidebar-objects-delete">Delete</button>
+            <button class="sidebar-button yellow" id="sidebar-objects-follow">Follow</button>
+            <button class="sidebar-button yellow" id="sidebar-objects-blah">Freeze</button>
         </div>
-        <p>Select an object below to examine.</p>
+        <p>Select an object below or on the grid to examine.</p>
+
+        <button class="sidebar-button gray" id="sidebar-objects-deselect">Deselect</button>
         <div class="sidebar-table">
             <!-- javascript -->
         </div>
@@ -419,6 +441,7 @@ let speedFrequency; // Number of generations per second
 
 let globalMode = "C"; // Cell, object or info mode (C/O/I)
 let objectMode = "L"; // List, info or add objects (L/I/A)
+let selectedObject = -1; // ID of selected object (subgrid) on grid
 
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight - 80;
@@ -452,7 +475,16 @@ function showState() {
     let i = 0;
     for (let subgrid of state) {
         // Add to list in sidebar
-        objList.innerHTML += `<div class="sidebar-item">${subgrid.id} Object</div>`
+        let sidebarItem = document.createElement("div");
+        sidebarItem.className = "sidebar-item";
+        sidebarItem.innerText = `Object!`;
+        if (subgrid.id == selectedObject) {
+            sidebarItem.className = "sidebar-item selected";
+        }
+        objList.appendChild(sidebarItem);
+        sidebarItem.addEventListener("click", function () {
+            objectSelect(subgrid.id);
+        });
 
         // Show subgrid outline if on object mode
         if (globalMode == "O") {
@@ -460,10 +492,15 @@ function showState() {
             let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
             let width = subgrid.wh[0] * zoom;
             let height = subgrid.wh[1] * zoom;
-            main.innerHTML += `<div class="subgrid" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;"></div>`;
+
+            let className = "subgrid";
+            if (subgrid.id == selectedObject) {
+                className = "subgrid selected";
+            }
+            main.innerHTML += `<div class="${className}" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;"></div>`;
         }
 
-        let activeClass = subgrid.active ? "" : "fade"
+        let activeClass = subgrid.id == selectedObject ? "red" : subgrid.active ? "" : "fade"
         
         let relY = 0;
         for (let row of subgrid.sq) {
@@ -1049,7 +1086,9 @@ function stateSquareClick(x, y) {
     if (globalMode == "O") {
         let onSubgrid = false;
         for (let subgrid of state) {
-            if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
+            // Check if click lands on subgrid
+            if (x >= subgrid.tl[0] && y >= subgrid.tl[1] && x < subgrid.tl[0]+subgrid.wh[0] && y < subgrid.tl[1]+subgrid.wh[1]) {
+                // Select the object in the sidebar
                 objectSelect(subgrid.id);
             }
         }
@@ -1060,6 +1099,8 @@ function stateSquareClick(x, y) {
     // If on a subgrid already
     for (let subgrid of state) {
         if (x >= subgrid.tl[0]+1 && y >= subgrid.tl[1]+1 && x < subgrid.tl[0]+subgrid.wh[0]-1 && y < subgrid.tl[1]+subgrid.wh[1]-1) {
+            subgrid.active = true;
+            
             let relativeX = x - subgrid.tl[0];
             let relativeY = y - subgrid.tl[1];
             
@@ -1140,7 +1181,9 @@ function stateClear() {
 }
 
 function objectSelect(id) {
-    null;
+    console.log("SELECT "+id);
+    selectedObject = id;
+    showState();
 }
 
 function updateMode(mode) {
@@ -1165,14 +1208,14 @@ function updateMode(mode) {
         buttonSingle.className = "off";
         buttonMultiple.className = "on";
         buttonMenu.className = "off";
-        screenWidth = window.innerWidth - 400;
+        //screenWidth = window.innerWidth - 400;
     } else if (mode == "I") {
         sidebarObjects.style.right = "-400px";
         sidebarInfo.style.right = "0px";
         buttonSingle.className = "off";
         buttonMultiple.className = "off";
         buttonMenu.className = "on";
-        screenWidth = window.innerWidth - 400;
+        //screenWidth = window.innerWidth - 400;
     }
     showState();
 }
@@ -1271,6 +1314,25 @@ document.getElementById("button-multiple").addEventListener("click", function() 
 
 document.getElementById("button-info").addEventListener("click", function() {
     updateMode("I"); // Objects
+});
+
+// Object mode sidebar buttons
+
+document.getElementById("sidebar-objects-delete").addEventListener("click", function() {
+    let i = 0;
+    for (let subgrid of state) {
+        if (subgrid.id == selectedObject) {
+            // Delete selected subgrid
+            state.splice(i, 1);
+        }
+        i++;
+    };
+
+    showState();
+});
+
+document.getElementById("sidebar-objects-deselect").addEventListener("click", function() {
+    objectSelect(-1); // Deselect object
 });
 
 // Final updates
