@@ -96,7 +96,7 @@ div.sidebar {
 
 div.sidebar-table {
     width: 100%;
-    background-color: #dddddd;
+    background-color: var(--theme-2-transparent);
     border-radius: 15px;
 }
 
@@ -117,8 +117,7 @@ button.sidebar-button {
     width: fit-content;
     height: 30px;
     font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-    background-color: #dddddd;
-    border-radius: 999px;
+    background-color: white;
     box-shadow: none !important;
 }
 
@@ -150,12 +149,12 @@ div.sidebar-nav>.on {
     background-color: var(--theme);
 }
 div.sidebar-nav>:not(:first-child) {
-    border-top-left-radius: 2px;
-    border-bottom-left-radius: 2px;
+    border-top-left-radius: 5px !important;
+    border-bottom-left-radius: 5px;
 }
 div.sidebar-nav>:not(:last-child) {
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 
 /* Main styles */
@@ -363,6 +362,7 @@ div.button-divider {
             <button class="sidebar-button" id="sidebar-objects-follow">Follow</button>
             <button class="sidebar-button" id="sidebar-objects-blah">Freeze</button>
         </div>
+        <p>Select an object below to examine.</p>
         <div class="sidebar-table">
             <!-- javascript -->
         </div>
@@ -416,7 +416,24 @@ let objectMode = "L"; // List, info or add objects (L/I/A)
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight - 80;
 
-let state = [{"tl":[51,49],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[43,42],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[36,34],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[28,27],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[21,19],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[13,12],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[6,4],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,true,false,false],[false,false,false,true,false],[false,true,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"tl":[-14,-10],"wh":[10,9],"sq":[[false,false,false,false,false,false,false,false,false,false],[false,false,false,false,true,false,false,false,false,false],[false,false,false,true,true,true,true,false,false,false],[false,false,true,true,false,true,false,true,false,false],[false,true,true,true,false,true,false,false,true,false],[false,false,true,true,false,true,false,true,false,false],[false,false,false,true,true,true,true,false,false,false],[false,false,false,false,true,false,false,false,false,false],[false,false,false,false,false,false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,true,true,true,true,true,false],[false,true,true,true,true,true,true,true,false]]},{"tl":[-24,-8],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"tl":[10,-10],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"tl":[-4,-12],"wh":[8,9],"sq":[[false,false,false,false,false,false,false,false],[false,false,false,false,true,false,true,false],[false,false,true,false,false,false,true,false],[false,false,true,false,false,false,false,false],[false,true,false,false,false,false,true,false],[false,false,true,false,false,false,false,false],[false,false,true,false,false,false,true,false],[false,false,false,false,true,false,true,false],[false,false,false,false,false,false,false,false]],"blank":[[false,true,true,false,true,false,true,false],[false,true,true,true,true,true,true,true,false]],"active":true},{"tl":[-2,-3],"wh":[5,5],"sq":[[false,false,false,false,false],[false,false,false,true,false],[false,true,false,true,false],[false,false,true,true,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]}];
+let nextId = 1;
+let state = [{ // Initial glider
+    "id":0,
+    "tl":[-6,-6],
+    "wh":[5,5],
+    "sq":[
+        [false,false,false,false,false],
+        [false,false,true,false,false],
+        [false,false,false,true,false],
+        [false,true,true,true,false],
+        [false,false,false,false,false]
+    ],
+    "blank":[
+        [false,true,true,true,false],
+        [false,true,true,true,false]
+    ],
+    "active":true
+}];
 
 function showState() {
     let main = document.querySelector("main");
@@ -428,7 +445,7 @@ function showState() {
     let i = 0;
     for (let subgrid of state) {
         // Add to list in sidebar
-        objList.innerHTML += `<div class="sidebar-item">Object</div>`
+        objList.innerHTML += `<div class="sidebar-item">${subgrid.id} Object</div>`
 
         // Show subgrid outline if on object mode
         if (globalMode == "O") {
@@ -573,6 +590,7 @@ function stateMerge() {
                     
                     // Define dimensions of new subgrid
                     let newSubgrid = {
+                        id: nextId,
                         tl: [
                             // The topmost and leftmost point
                             Math.min(subgrid1.tl[0], subgrid2.tl[0]), 
@@ -589,6 +607,7 @@ function stateMerge() {
                         blank: [],
                         active: true,
                     }
+                    nextId++;
                     newSubgrid.blank = [
                         Array(newSubgrid.wh[0]).fill(false),
                         Array(newSubgrid.wh[1]).fill(false)
@@ -696,6 +715,7 @@ function stateSplit() {
 
                     // Create new subgrids
                     let leftSubgrid = {
+                        id: nextId,
                         tl: subgrid.tl,
                         wh: [
                             splitIndex+1, // Width + 1 (margin of blank cells)
@@ -704,7 +724,9 @@ function stateSplit() {
                         sq: [],
                         active: true,
                     };
+                    nextId++;
                     let rightSubgrid = {
+                        id: nextId,
                         tl: [
                             subgrid.tl[0] + splitIndex + countGap - 1, // X position
                             subgrid.tl[1] // Y position
@@ -716,6 +738,7 @@ function stateSplit() {
                         sq: [],
                         active: true,
                     };
+                    nextId++;
                     leftSubgrid.blank = [
                         Array(leftSubgrid.wh[0]).fill(false),
                         Array(leftSubgrid.wh[1]).fill(false)
@@ -810,6 +833,7 @@ function stateSplit() {
 
                     // Create new subgrids
                     let topSubgrid = {
+                        id: nextId,
                         tl: subgrid.tl,
                         wh: [
                             subgrid.wh[0], // Width
@@ -819,7 +843,9 @@ function stateSplit() {
                         blank: [],
                         active: true,
                     };
+                    nextId++;
                     let bottomSubgrid = {
+                        id: nextId,
                         tl: [
                             subgrid.tl[0], // X position
                             subgrid.tl[1] + splitIndex + countGap - 1 // Y position
@@ -832,6 +858,7 @@ function stateSplit() {
                         blank: [],
                         active: true,
                     };
+                    nextId++;
                     topSubgrid.blank = [
                         Array(topSubgrid.wh[0]).fill(false),
                         Array(topSubgrid.wh[1]).fill(false)
@@ -1059,6 +1086,7 @@ function stateSquareClick(x, y) {
     // If not on subgrid, create new and merge if needed
     if (!onSubgrid) {
         state.push({
+            id: nextId,
             wh: [3, 3],
             tl: [x-1, y-1],
             sq: [
@@ -1072,6 +1100,7 @@ function stateSquareClick(x, y) {
             ],
             active: true,
         });
+        nextId++;
     }
 
     // Tidy up
