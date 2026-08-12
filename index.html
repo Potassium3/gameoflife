@@ -1284,13 +1284,30 @@ document.querySelector("main").addEventListener("click", function(e) {
 });
 
 // Drag on grid
+let mouseDown = false;
+let initialX;
+let initialY;
 document.querySelector("main").onmousedown = function(e) {
-    let initialPos = [];
-    let currentPos = [];
-    console.log("drag");
+    if (!mouseDown) {
+        initialX = e.clientX;
+        initialY = e.clientY;
+    }
+
+    mouseDown = true;
+
+    let currentX = 0;
+    let currentY = 0;
+    console.log("DRAG DOWN");
+
+    function moveMouse() {
+        let currentX = e.clientX;
+        let currentY = e.clientY;
+        document.querySelector("main").style.transform = `translate(${currentX - initialX}px, ${currentY - initialY}px)`
+    }
+
     // Make sure press is long enough for drag AND the mouse actually moves
     // Remember to prevent the default click if dragging
-    document.onmouseup = 0// Function
+    document.onmouseup = moveMouse; // Function
     document.onmousemove = 0// Function drag
 };
 
