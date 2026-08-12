@@ -202,6 +202,11 @@ h2 {
     color: var(--theme-2) !important;
 }
 
+h3 {
+    font-size: 16pt;
+    color: var(--theme-2) !important;
+}
+
 p {
     font-size: 12pt;
 }
@@ -1279,9 +1284,15 @@ document.querySelector("main").addEventListener("click", function(e) {
 });
 
 // Drag on grid
-/*document.querySelector("main").addEventListener("", function(e) {
-    console.log("drag")
-});*/
+document.querySelector("main").onmousedown = function(e) {
+    let initialPos = [];
+    let currentPos = [];
+    console.log("drag");
+    // Make sure press is long enough for drag AND the mouse actually moves
+    // Remember to prevent the default click if dragging
+    document.onmouseup = 0// Function
+    document.onmousemove = 0// Function drag
+};
 
 // Buttons
 document.getElementById("button-next").addEventListener("click", stateNext);
