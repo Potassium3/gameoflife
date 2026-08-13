@@ -190,7 +190,7 @@ html {
 html, body {
     margin: 0;
     background-color: #11151b;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6, p {
@@ -224,6 +224,8 @@ main {
     background-position-x: 0px; /* Script.js */
     background-position-y: 0px; /* Script.js */
     z-index: 0;
+
+    touch-action: none; /* Prevent unusual touchscreen events */
 }
 
 main>div.square {
@@ -1095,7 +1097,11 @@ function stateSquareClick(x, y) {
             if (x >= subgrid.tl[0] && y >= subgrid.tl[1] && x < subgrid.tl[0]+subgrid.wh[0] && y < subgrid.tl[1]+subgrid.wh[1]) {
                 // Select the object in the sidebar
                 objectSelect(subgrid.id);
+                onSubgrid = true;
             }
+        }
+        if (!onSubgrid) {
+            objectSelect(-1);
         }
         return;
     }
@@ -1275,41 +1281,51 @@ function updateSpeed() {
 
 // Event listeners
 
-// Click on grid
-document.querySelector("main").addEventListener("click", function(e) {
-    // Calculate cell coordinates clicked
-    let gridX = Math.floor((e.clientX - screenWidth/2)/zoom - posX);
-    let gridY = Math.floor((e.clientY - screenHeight/2)/zoom - posY);
-    stateSquareClick(gridX, gridY);
-});
-
-// Drag on grid
+// Drag or click on grid
 let mouseDown = false;
 let initialX;
 let initialY;
-document.querySelector("main").onmousedown = function(e) {
-    if (!mouseDown) {
-        initialX = e.clientX;
-        initialY = e.clientY;
+let initialT;
+let currentX = 0;
+let currentY = 0;
+let currentT = 0;
+
+function moveMouse(e) {
+    e = e || window.event;
+    currentX = e.clientX;
+    currentY = e.clientY;
+    document.querySelector("main").style.transform = `translate(${currentX - initialX}px, ${currentY - initialY}px)`
+}
+
+function upMouse(e) {
+    e = e || window.event;
+    document.onpointermove = null; // Reset movement
+    document.onpointerup = null; // Reset movement
+    
+    // If click was long enough or far enough to be drag
+    currentT = new Date().getTime();
+    if (currentT - initialT > 200) {
+        // Drag - actually update posX and posY and get rid of transform
+        posX += (currentX - initialX)/zoom;
+        posY += (currentY - initialY)/zoom;
+        showState();
+    } else {
+        // Click
+        let gridX = Math.floor((e.clientX - screenWidth/2)/zoom - posX);
+        let gridY = Math.floor((e.clientY - screenHeight/2)/zoom - posY);
+        stateSquareClick(gridX, gridY);
     }
+    document.querySelector("main").style.transform = "none";
+}
 
-    mouseDown = true;
-
-    let currentX = 0;
-    let currentY = 0;
-    console.log("DRAG DOWN");
-
-    function moveMouse() {
-        let currentX = e.clientX;
-        let currentY = e.clientY;
-        document.querySelector("main").style.transform = `translate(${currentX - initialX}px, ${currentY - initialY}px)`
-    }
-
-    // Make sure press is long enough for drag AND the mouse actually moves
-    // Remember to prevent the default click if dragging
-    document.onmouseup = moveMouse; // Function
-    document.onmousemove = 0// Function drag
-};
+document.querySelector("main").addEventListener("pointerdown", function() {
+    let e = window.event;
+    initialX = e.clientX;
+    initialY = e.clientY;
+    document.onpointermove = moveMouse;
+    document.onpointerup = upMouse;
+    initialT = new Date().getTime();
+});
 
 // Buttons
 document.getElementById("button-next").addEventListener("click", stateNext);
