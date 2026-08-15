@@ -475,7 +475,7 @@ let state = [{ // Initial glider
     "active":true
 }];
 
-function transformations(sq) {
+function transformations(sq, targetsq) {
     let list = [];
     const matrices = [
         [1, 0, 0, 1], // No transformation
@@ -487,23 +487,28 @@ function transformations(sq) {
         [0, 1, 1, 0], // Flip diagonal \
         [0, -1, -1, 0], // Flip diagonal /
     ]
+    let anytargetmeet = false;
     for (let matrix of matrices) {
+        let targetmeet = true;
         let newSq = Array(sq.wh[1]).fill(Array(sq.wh[0]).fill(false));
-        let middle = [sq.wh[0]/2, sq.wh[1]/2];
+        console.log(newSq);
+        let middle = [sq.wh[0]/2-0.5, sq.wh[1]/2-0.5];
         for (let y=0; y<sq.wh[1]; y++) {
             for (let x=0; x<sq.wh[0]; x++) {
-                if (sq.sq[y][x]) {
-                    let newX = (x - middle[0])*matrix[0] + (y - middle[1])*matrix[1] + middle[0];
-                    let newY = (x - middle[0])*matrix[2] + (y - middle[1])*matrix[3] + middle[1];
-                    newSq[newY][newX] = true;
-                    console.log(newX, newY);
+                let newX = (x - middle[0])*matrix[0] + (y - middle[1])*matrix[1] + middle[0];
+                let newY = (x - middle[0])*matrix[2] + (y - middle[1])*matrix[3] + middle[1];
+                newSq[newY][newX] = sq.sq[y][x]; // Boolean assignment
+                if (newSq[newY][newX] != targetsq[newY][newX]) {
+                    targetmeet = false;
                 }
             }
         }
+        if (targetmeet) {
+            anytargetmeet = true;
+        }
         list.push(newSq);
-        console.log(newSq);
     }
-    return list;
+    return anytargetmeet;
 }
 
 function recognise(subgrid) {
@@ -513,7 +518,7 @@ function recognise(subgrid) {
         return "Single Cell"
     } else if (subgrid.wh[0]==4 && subgrid.wh[1]==4 && subgrid.sq[1][1] && subgrid.sq[1][2] && subgrid.sq[2][1] && subgrid.sq[2][2]) {
         return "Block"
-    } else if (transformations({
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
         wh: subgrid.wh,
         sq: [
             [false, false, false, false, false],
@@ -523,9 +528,9 @@ function recognise(subgrid) {
             [false, false, false, false, false],
         ],
         direction: "se",
-    }).includes(subgrid.sq)) {
+    }, subgrid.sq)) {
         return "Glider"
-    } else if (transformations({
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
         wh: subgrid.wh,
         sq: [
             [false, false, false, false, false],
@@ -535,7 +540,7 @@ function recognise(subgrid) {
             [false, false, false, false, false],
         ],
         direction: "se",
-    }).includes(subgrid.sq)) {
+    }, subgrid.sq)) {
         return "Glider"
     } else if (subgrid.active) {
         return "Active"
