@@ -553,6 +553,12 @@ function showState() {
     let main = document.querySelector("main");
     let blob = document.querySelector(".blob");
     let objList = document.querySelector(".sidebar-table");
+    if (state.length == 0) {
+        // If board empty pause
+        play = false;
+        clearInterval(playIntervalID);
+        document.getElementById("button-play").className = "";
+    }
     blob.innerText = generation;
     main.innerHTML = "";
     objList.innerHTML = "";
