@@ -103,12 +103,13 @@ div.sidebar-table {
 }
 
 div.sidebar-item {
+    position: relative;
     width: 100%;
     height: 30px;
     margin: 0 0 5px;
     border-radius: 15px;
     cursor: pointer;
-    padding: 0 5px;
+    padding: 0 5px 0 30px;
 
     display: flex;
     align-items: center;
@@ -117,6 +118,28 @@ div.sidebar-item {
 
 div.sidebar-item.selected {
     background-color: var(--theme-2);
+}
+
+div.sidebar-item-active {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    border-radius: 100%;
+    display: inline;
+    width: 10px;
+    height: 10px;
+    background-color: black;
+}
+
+div.sidebar-item-stable {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    border-radius: 100%;
+    display: inline;
+    width: 10px;
+    height: 10px;
+    background-color: #888888;
 }
 
 button.sidebar-button {
@@ -157,6 +180,7 @@ div.sidebar-header {
     border-radius: 15px;
     background-color: #ffffff88;
     box-shadow: 0 0 5px #444444;
+    z-index: 999;
 }
 
 div.sidebar-nav>* {
@@ -237,6 +261,7 @@ main>div.square {
     position: absolute;
     background-color: var(--theme);
     aspect-ratio: 1;
+    z-index: 1;
 }
 main>div.square.fade {
     background-color: #dddddd !important;
@@ -248,8 +273,19 @@ main>div.subgrid {
     position: absolute;
     z-index: 20;
     border: 2px solid white;
-    border-radius: 4px;
     cursor: pointer;
+}
+main>div.subgridhidden {
+    position: absolute;
+    z-index: 0;
+    color: #dddddd;
+    user-select: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    transform: translate(0px, 10px);
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 10pt;
 }
 
 main>div.subgrid.selected {
@@ -398,8 +434,10 @@ div.button-divider {
                 <button class="sidebar-button" id="sidebar-objects-add">Add</button>
             </div>
             <button class="sidebar-button red" id="sidebar-objects-delete">Delete</button>
-            <button class="sidebar-button blue" id="sidebar-objects-follow">Follow</button>
-            <button class="sidebar-button blue" id="sidebar-objects-blah">Freeze</button>
+            <button class="sidebar-button blue" id="sidebar-objects-left">L</button>
+            <button class="sidebar-button blue" id="sidebar-objects-up">U</button>
+            <button class="sidebar-button blue" id="sidebar-objects-down">D</button>
+            <button class="sidebar-button blue" id="sidebar-objects-right">R</button>
         </div>
         <p>Select an object below or on the grid to examine.</p>
         <div class="sidebar-table">
@@ -441,8 +479,8 @@ div.button-divider {
 
 // Improve: Make split better (otherwise ok)
 let zoom; // Width of cells (px)
-let posX = 5; // One unit is one cell
-let posY = 5;
+let posX = 15; // One unit is one cell
+let posY = -13;
 
 let generation = 0;
 let play = false;
@@ -457,23 +495,7 @@ let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight - 80;
 
 let nextId = 1;
-let state = [{ // Initial glider
-    "id":0,
-    "tl":[-6,-6],
-    "wh":[5,5],
-    "sq":[
-        [false,false,false,false,false],
-        [false,false,true,false,false],
-        [false,false,false,true,false],
-        [false,true,true,true,false],
-        [false,false,false,false,false]
-    ],
-    "blank":[
-        [false,true,true,true,false],
-        [false,true,true,true,false]
-    ],
-    "active":true
-}];
+let state = [{"id":242,"tl":[-46,11],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"id":290,"tl":[-12,9],"wh":[4,4],"sq":[[false,false,false,false],[false,true,true,false],[false,true,true,false],[false,false,false,false]],"blank":[[false,true,true,false],[false,true,true,false]],"active":false},{"id":377,"tl":[-20,19],"wh":[5,5],"sq":[[false,false,false,false,false],[false,true,false,false,false],[false,false,true,true,false],[false,true,true,false,false],[false,false,false,false,false]],"active":true,"blank":[[false,true,true,true,false],[false,true,true,true,false]]},{"id":410,"tl":[-41,9],"wh":[7,9],"sq":[[false,false,false,false,false,false,false],[false,false,false,false,true,false,false],[false,false,false,true,false,true,false],[false,false,true,false,true,true,false],[false,true,true,false,true,true,false],[false,false,true,false,true,true,false],[false,false,false,true,false,true,false],[false,false,false,false,true,false,false],[false,false,false,false,false,false,false]],"blank":[[false,true,true,true,true,true,false],[false,true,true,true,true,true,true,true,false]],"active":true},{"id":556,"tl":[-23,7],"wh":[9,9],"sq":[[false,false,false,false,false,false,false,false,false],[false,true,false,true,false,false,false,false,false],[false,true,false,false,true,false,false,false,false],[false,false,false,false,true,true,false,false,false],[false,false,true,false,false,false,true,true,false],[false,false,false,false,true,true,false,false,false],[false,true,false,false,true,false,false,false,false],[false,true,false,true,false,false,false,false,false],[false,false,false,false,false,false,false,false,false]],"blank":[[false,true,true,true,true,true,true,true,false],[false,true,true,true,true,true,true,true,false]],"active":true},{"id":585,"tl":[-31,9],"wh":[8,9],"sq":[[false,false,false,false,false,false,false,false],[false,true,false,false,false,false,false,false],[false,true,false,false,false,false,false,false],[false,false,true,false,false,false,false,false],[false,false,false,false,false,true,true,false],[false,true,true,true,false,false,true,false],[false,false,false,true,true,true,true,false],[false,false,false,false,true,true,false,false],[false,false,false,false,false,false,false,false]],"blank":[[false,true,true,true,true,true,true,false],[false,true,true,true,true,true,true,true,false]],"active":true}];
 
 function transformations(sq, targetsq) {
     let list = [];
@@ -491,17 +513,25 @@ function transformations(sq, targetsq) {
     for (let matrix of matrices) {
         let targetmeet = true;
         let newSq = Array(sq.wh[1]).fill(Array(sq.wh[0]).fill(false));
-        console.log(newSq);
         let middle = [sq.wh[0]/2-0.5, sq.wh[1]/2-0.5];
+        let stop = false;
         for (let y=0; y<sq.wh[1]; y++) {
             for (let x=0; x<sq.wh[0]; x++) {
                 let newX = (x - middle[0])*matrix[0] + (y - middle[1])*matrix[1] + middle[0];
                 let newY = (x - middle[0])*matrix[2] + (y - middle[1])*matrix[3] + middle[1];
+                if (parseInt(newX) != newX || newX >= sq.wh[0] || newX < 0) {
+                    stop = true;
+                    break;
+                } else if (parseInt(newY) != newY || newY >= sq.wh[1] || newY < 0) {
+                    stop = true;
+                    break;
+                }
                 newSq[newY][newX] = sq.sq[y][x]; // Boolean assignment
                 if (newSq[newY][newX] != targetsq[newY][newX]) {
                     targetmeet = false;
                 }
             }
+            if (stop) {break};
         }
         if (targetmeet) {
             anytargetmeet = true;
@@ -512,12 +542,32 @@ function transformations(sq, targetsq) {
 }
 
 function recognise(subgrid) {
-    if ((subgrid.wh[0]==3 && subgrid.wh[1]==5) || (subgrid.wh[1]==3 && subgrid.wh[0]==5)) {
-        return "Blinker"
+    if ((subgrid.wh[0]==5 && subgrid.wh[1]==3) && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false],
+            [false, true, true, true, false],
+            [false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Blinker", true]
+    } else if ((subgrid.wh[0]==3 && subgrid.wh[1]==5) && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false],
+            [false, true, false],
+            [false, true, false],
+            [false, true, false],
+            [false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Blinker", true]
     } else if (subgrid.wh[0]==3 && subgrid.wh[1]==3) {
-        return "Single Cell"
+        return ["Single Cell", false]
     } else if (subgrid.wh[0]==4 && subgrid.wh[1]==4 && subgrid.sq[1][1] && subgrid.sq[1][2] && subgrid.sq[2][1] && subgrid.sq[2][2]) {
-        return "Block"
+        return ["Block", true]
     } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
         wh: subgrid.wh,
         sq: [
@@ -529,7 +579,7 @@ function recognise(subgrid) {
         ],
         direction: "se",
     }, subgrid.sq)) {
-        return "Glider"
+        return ["Glider", true]
     } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
         wh: subgrid.wh,
         sq: [
@@ -541,11 +591,87 @@ function recognise(subgrid) {
         ],
         direction: "se",
     }, subgrid.sq)) {
-        return "Glider"
-    } else if (subgrid.active) {
-        return "Active"
+        return ["Glider", true]
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false],
+            [false, false, true, true, false],
+            [false, true, false, true, false],
+            [false, false, true, false, false],
+            [false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Boat", true]
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false],
+            [false, false, true, false, false],
+            [false, true, false, true, false],
+            [false, false, true, false, false],
+            [false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Tub", true]
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==5 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false],
+            [false, false, true, true, false],
+            [false, true, false, true, false],
+            [false, true, true, false, false],
+            [false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Ship", true]
+    } else if (subgrid.wh[0]==5 && subgrid.wh[1]==6 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false],
+            [false, false, true, false, false],
+            [false, true, false, true, false],
+            [false, true, false, true, false],
+            [false, false, true, false, false],
+            [false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Beehive", true]
+    } else if (subgrid.wh[0]==6 && subgrid.wh[1]==5 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false, false],
+            [false, false, true, true, false, false],
+            [false, true, false, false, true, false],
+            [false, false, true, true, false, false],
+            [false, false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Beehive", true]
+    } else if (subgrid.wh[0]==6 && subgrid.wh[1]==6 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false, false],
+            [false, false, true, true, false, false],
+            [false, true, false, false, true, false],
+            [false, false, true, false, true, false],
+            [false, false, false, true, false, false],
+            [false, false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Loaf", true]
+    }
+    
+    if (subgrid.active) {
+        return ["Unknown Active", false]
     } else {
-        return "Other stable"
+        return ["Unknown Stable", false]
     }
 }
 
@@ -567,7 +693,16 @@ function showState() {
         // Add to list in sidebar
         let sidebarItem = document.createElement("div");
         sidebarItem.className = "sidebar-item";
-        sidebarItem.innerText = recognise(subgrid);
+        let name = "";
+        if (zoom >= 10) {
+            name = recognise(subgrid);
+        }
+        sidebarItem.innerText = name[0];
+        if (subgrid.active) {
+            sidebarItem.innerHTML += `<div class="sidebar-item-active"></div>`;
+        } else {
+            sidebarItem.innerHTML += `<div class="sidebar-item-stable"></div>`;
+        }
         if (subgrid.id == selectedObject) {
             sidebarItem.className = "sidebar-item selected";
         }
@@ -577,18 +712,21 @@ function showState() {
         });
 
         // Show subgrid outline if on object mode
-        if (globalMode == "O") {
-            let top = (subgrid.tl[1] + posY) * zoom + screenHeight/2;
-            let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
-            let width = subgrid.wh[0] * zoom;
-            let height = subgrid.wh[1] * zoom;
+        // Show subgrid name if on any other mode
+        let top = (subgrid.tl[1] + posY) * zoom + screenHeight/2;
+        let left = (subgrid.tl[0] + posX) * zoom + screenWidth/2;
+        let width = subgrid.wh[0] * zoom;
+        let height = subgrid.wh[1] * zoom;
 
-            let className = "subgrid";
-            if (subgrid.id == selectedObject) {
-                className = "subgrid selected";
-            }
-            main.innerHTML += `<div class="${className}" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;"></div>`;
+        let className = "subgrid";
+        let newName = "";
+        if (globalMode != "O") {
+            className = "subgridhidden";
+            newName = name[1] ? name[0] : "";
+        } else if (subgrid.id == selectedObject) {
+            className = "subgrid selected";
         }
+        main.innerHTML += `<div class="${className}" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;">${newName}</div>`;
 
         let activeClass = subgrid.id == selectedObject ? "red" : subgrid.active ? "" : "fade"
         
@@ -1458,6 +1596,51 @@ document.getElementById("sidebar-objects-delete").addEventListener("click", func
     showState();
 });
 
+document.getElementById("sidebar-objects-left").addEventListener("click", function() {
+    let i = 0;
+    for (let subgrid of state) {
+        if (subgrid.id == selectedObject) {
+            // Delete selected subgrid
+            subgrid.tl[0]--;
+        }
+        i++;
+    };
+    showState();
+});
+document.getElementById("sidebar-objects-right").addEventListener("click", function() {
+    let i = 0;
+    for (let subgrid of state) {
+        if (subgrid.id == selectedObject) {
+            // Delete selected subgrid
+            subgrid.tl[0]++;
+        }
+        i++;
+    };
+    showState();
+});
+document.getElementById("sidebar-objects-up").addEventListener("click", function() {
+    let i = 0;
+    for (let subgrid of state) {
+        if (subgrid.id == selectedObject) {
+            // Delete selected subgrid
+            subgrid.tl[1]--;
+        }
+        i++;
+    };
+    showState();
+});
+document.getElementById("sidebar-objects-down").addEventListener("click", function() {
+    let i = 0;
+    for (let subgrid of state) {
+        if (subgrid.id == selectedObject) {
+            // Delete selected subgrid
+            subgrid.tl[1]++;
+        }
+        i++;
+    };
+    showState();
+});
+
 // Final updates
 
 // Update zoom
@@ -1471,7 +1654,7 @@ document.getElementById("input-speed").value = 29;
 updateSpeed();
 
 // Update mode
-updateMode("C");
+updateMode("I");
 
 // Update grid
 showState();
