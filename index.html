@@ -521,9 +521,11 @@ function transformations(sq, targetsq) {
                 let newY = (x - middle[0])*matrix[2] + (y - middle[1])*matrix[3] + middle[1];
                 if (parseInt(newX) != newX || newX >= sq.wh[0] || newX < 0) {
                     stop = true;
+                    targetmeet = false;
                     break;
                 } else if (parseInt(newY) != newY || newY >= sq.wh[1] || newY < 0) {
                     stop = true;
+                    targetmeet = false;
                     break;
                 }
                 newSq[newY][newX] = sq.sq[y][x]; // Boolean assignment
