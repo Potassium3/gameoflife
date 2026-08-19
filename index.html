@@ -274,6 +274,7 @@ main>div.subgrid {
     z-index: 20;
     border: 2px solid white;
     cursor: pointer;
+    overflow: hidden;
 }
 main>div.subgridhidden {
     position: absolute;
@@ -286,10 +287,17 @@ main>div.subgridhidden {
     transform: translate(0px, 10px);
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     font-size: 10pt;
+    overflow: hidden;
 }
 
 main>div.subgrid.selected {
     background-color: #ffffff44;
+}
+
+main>div.subgridhidden>p {
+    margin: 0;
+    background-color: var(--background);
+    border-radius: 2px;
 }
 
 /* Button and menu styles */
@@ -668,6 +676,19 @@ function recognise(subgrid) {
         direction: "se",
     }, subgrid.sq)) {
         return ["Loaf", true]
+    } else if (subgrid.wh[0]==6 && subgrid.wh[1]==6 && transformations({
+        wh: subgrid.wh,
+        sq: [
+            [false, false, false, false, false, false],
+            [false, false, true, true, false, false],
+            [false, true, false, false, true, false],
+            [false, true, false, false, true, false],
+            [false, false, true, true, false, false],
+            [false, false, false, false, false, false],
+        ],
+        direction: "se",
+    }, subgrid.sq)) {
+        return ["Pond", true]
     }
     
     if (subgrid.active) {
@@ -728,6 +749,7 @@ function showState() {
         } else if (subgrid.id == selectedObject) {
             className = "subgrid selected";
         }
+        if (newName != "") {newName = `<p>${newName}</p>`};
         main.innerHTML += `<div class="${className}" style="top:${top}px; left:${left}px; width:${width}px; height:${height}px; border-width:${Math.max(1,parseInt(zoom/6))}px;">${newName}</div>`;
 
         let activeClass = subgrid.id == selectedObject ? "red" : subgrid.active ? "" : "fade"
